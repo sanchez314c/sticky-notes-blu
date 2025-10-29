@@ -1,0 +1,2 @@
+!@#!@# false
+I'll perform a comprehensive architecture analysis of your Electron application. Let me start by exploring the project structure and then analyze each core component.AI_APICallError: prompt is too long: 210561 tokens > 200000 maximum

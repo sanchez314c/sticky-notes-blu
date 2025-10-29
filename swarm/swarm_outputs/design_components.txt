@@ -1,0 +1,24 @@
+!@#!@# false
+I've created a comprehensive component library specification for the StickyNotes app dark mode. The specification includes:
+
+## Key Components Defined:
+
+1. **Note Components**: Core StickyNote with variants, sizes, and states; NotePreview for lists
+2. **Button System**: Primary, secondary, and icon buttons with multiple variants
+3. **Input Components**: TextArea, SearchField, and FilterSelect with proper states  
+4. **Navigation**: Sidebar, TabNavigation, and Breadcrumbs for app navigation
+5. **Modal Dialogs**: Base Modal, ConfirmDialog, and SettingsModal
+6. **Context Menus**: General and note-specific right-click menus
+7. **Toolbar Components**: MainToolbar, FloatingToolbar, and ColorPicker
+8. **Status Indicators**: LoadingSpinner, StatusBadge, ProgressIndicator, ConnectionStatus
+
+## Design System Features:
+
+- **Complete dark mode color palette** with note colors and UI colors
+- **Typography scale** with system fonts and proper sizing
+- **Spacing system** for consistent layouts
+- **Responsive breakpoints** for mobile, tablet, and desktop
+- **Animation guidelines** with easing curves and duration scales
+- **Accessibility standards** including keyboard navigation and screen reader support
+
+Each component includes detailed TypeScript props interfaces, CSS specifications, state definitions, and responsive behavior guidelines. This provides a solid foundation for implementing a cohesive, professional dark mode interface for the StickyNotes application.

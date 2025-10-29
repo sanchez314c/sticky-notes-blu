@@ -1,0 +1,2 @@
+!@#!@# false
+This technology stack provides a modern, performant, and maintainable foundation for your StickyNotes app with excellent dark mode support and native macOS integration. The combination ensures fast development cycles and a polished end-user experience.

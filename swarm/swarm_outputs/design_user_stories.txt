@@ -1,0 +1,102 @@
+!@#!@# false
+# StickyNotes Visual Customization & Theme Options - User Stories
+
+## Theme Selection
+
+**US-001: Basic Theme Selection**
+As a StickyNotes user, I want to choose between dark, light, and auto themes so that I can use the app in a visual style that matches my preference and environment.
+
+**US-002: Auto Theme Switching**
+As a StickyNotes user, I want the auto theme option to automatically switch between light and dark modes based on my system settings so that the app seamlessly adapts to my operating system's appearance without manual intervention.
+
+**US-003: Theme Persistence**
+As a StickyNotes user, I want my selected theme to be remembered across app sessions so that I don't have to reconfigure my visual preferences every time I open the application.
+
+## Custom Color Schemes
+
+**US-004: Predefined Color Schemes**
+As a StickyNotes user, I want to select from a variety of predefined color schemes (e.g., Ocean Blue, Forest Green, Sunset Orange) so that I can quickly personalize my notes with attractive, professionally-designed color combinations.
+
+**US-005: Custom Color Creation**
+As a power user, I want to create my own custom color schemes by selecting specific colors for backgrounds, text, borders, and accents so that I can achieve the exact visual aesthetic that matches my personal or brand preferences.
+
+**US-006: Color Scheme Categories**
+As a StickyNotes user, I want color schemes organized by categories (Professional, Vibrant, Pastel, High Contrast) so that I can easily find themes that suit my specific use case or visual needs.
+
+## Font Customization
+
+**US-007: Font Family Selection**
+As a StickyNotes user, I want to choose from a selection of fonts (serif, sans-serif, monospace, handwriting) so that I can improve readability and match my personal style preferences.
+
+**US-008: Font Size Adjustment**
+As a StickyNotes user, I want to adjust the font size with options ranging from small to extra-large so that I can ensure optimal readability based on my device, screen size, and vision needs.
+
+**US-009: Font Weight Options**
+As a StickyNotes user, I want to select different font weights (light, regular, medium, bold) so that I can emphasize important content and create visual hierarchy in my notes.
+
+## Note Appearance Options
+
+**US-010: Note Shape Variants**
+As a StickyNotes user, I want to choose from different note shapes (square, rectangle, rounded corners, circle) so that I can create visual variety and organize different types of content with distinct appearances.
+
+**US-011: Note Shadow and Border Effects**
+As a StickyNotes user, I want to apply shadow effects and border styles to my notes so that I can create depth and visual separation that makes my workspace more organized and aesthetically pleasing.
+
+**US-012: Note Size Presets**
+As a StickyNotes user, I want to select from predefined note sizes (small, medium, large, custom) so that I can quickly create notes appropriate for different amounts of content without manual resizing.
+
+**US-013: Transparency Options**
+As a StickyNotes user, I want to adjust the transparency/opacity of my notes so that I can create layered visual effects and see underlying content when needed.
+
+## Layout Preferences
+
+**US-014: Grid and Alignment Options**
+As an organized user, I want grid snap and alignment options so that I can arrange my notes in clean, structured layouts that look professional and are easy to navigate.
+
+**US-015: Workspace Background Customization**
+As a StickyNotes user, I want to customize my workspace background (solid colors, gradients, patterns, images) so that I can create a personalized environment that inspires creativity and productivity.
+
+**US-016: Note Spacing Controls**
+As a StickyNotes user, I want to control the default spacing between notes and margins so that I can optimize the use of screen real estate according to my workflow preferences.
+
+## Export/Import of Themes
+
+**US-017: Theme Export**
+As a StickyNotes user, I want to export my custom themes to files so that I can back up my visual configurations and share them with colleagues or across devices.
+
+**US-018: Theme Import**
+As a StickyNotes user, I want to import theme files created by myself or others so that I can quickly apply new visual styles and benefit from community-created themes.
+
+**US-019: Theme Sharing**
+As a creative user, I want to share my custom themes with other StickyNotes users through a built-in sharing mechanism so that I can contribute to the community and discover themes created by others.
+
+## Theme Previews
+
+**US-020: Real-time Theme Preview**
+As a StickyNotes user, I want to see a real-time preview of how themes will look in my workspace before applying them so that I can make informed decisions without disrupting my current work.
+
+**US-021: Theme Gallery with Previews**
+As a StickyNotes user, I want to browse a gallery of available themes with visual previews so that I can quickly identify and select themes that appeal to me without having to test each one individually.
+
+**US-022: Preview with Sample Content**
+As a StickyNotes user, I want theme previews to show sample notes with typical content so that I can better understand how the theme will look with actual text and see the readability and contrast levels.
+
+## User Preference Persistence
+
+**US-023: Cross-Device Synchronization**
+As a multi-device user, I want my theme and customization preferences to sync across all my devices so that I have a consistent experience whether I'm using my phone, tablet, or computer.
+
+**US-024: Preference Backup and Restore**
+As a StickyNotes user, I want my customization settings to be automatically backed up so that I can restore my preferred configuration if I reinstall the app or switch devices.
+
+**US-025: Profile-Based Themes**
+As a user who works in different contexts, I want to create and save multiple theme profiles (e.g., "Work," "Personal," "Study") so that I can quickly switch between different visual configurations optimized for different activities.
+
+**US-026: Theme History**
+As a StickyNotes user, I want to access a history of recently used themes so that I can quickly return to previous configurations without having to remember or recreate them.
+
+---
+
+**Total User Stories: 26**
+**Categories Covered: 8**
+**Focus Areas: Visual customization, user experience, accessibility, and personalization**

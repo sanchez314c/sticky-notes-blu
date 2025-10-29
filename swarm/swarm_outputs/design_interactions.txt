@@ -1,0 +1,30 @@
+!@#!@# false
+I've created a comprehensive interaction design specification for your StickyNotes app that covers all requested aspects with a focus on macOS-native feel and 60fps performance.
+
+## Key Highlights:
+
+**🎯 Native macOS Feel**
+- Follows Apple Human Interface Guidelines
+- System-standard animations and timing
+- Respects accessibility preferences (reduced motion, high contrast)
+
+**⚡ Performance Optimized**
+- Hardware-accelerated transforms
+- Efficient rendering techniques
+- 60fps target for all animations
+- Memory management guidelines
+
+**🎨 Comprehensive Interactions**
+- Detailed hover states with subtle elevation
+- Satisfying click feedback with proper timing
+- Smooth drag-and-drop with visual affordances
+- Window management following macOS standards
+- Intuitive note creation/editing flows
+
+**✨ Micro-Animation Details**
+- Specific durations and easing functions
+- Spring animations for note creation
+- Progressive loading sequences
+- Gentle error state feedback
+
+The specification includes implementation guidelines, accessibility considerations, and a testing checklist to ensure the final product delivers a polished, native macOS experience.

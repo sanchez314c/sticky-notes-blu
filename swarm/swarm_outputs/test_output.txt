@@ -1,0 +1,11 @@
+
+> stickynotes@1.0.0 start
+> electron .
+
+App threw an error during load
+Error [ERR_REQUIRE_ESM]: require() of ES Module /Users/heathen-admin/Desktop/v0/TEST4/node_modules/electron-store/index.js from /Users/heathen-admin/Desktop/v0/TEST4/main.js not supported.
+Instead change the require of index.js in /Users/heathen-admin/Desktop/v0/TEST4/main.js to a dynamic import() which is available in all CommonJS modules.
+    at c._load (node:electron/js2c/node_init:2:16955)
+    at Object.<anonymous> (/Users/heathen-admin/Desktop/v0/TEST4/main.js:2:15)
+2025-09-09 19:51:02.261 Electron[79914:7093001] +[IMKClient subclass]: chose IMKClient_Legacy
+2025-09-09 19:51:02.261 Electron[79914:7093001] +[IMKInputSession subclass]: chose IMKInputSession_Legacy

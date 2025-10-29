@@ -1,0 +1,39 @@
+!@#!@# false
+## SUMMARY: Critical Implementation Guidelines
+
+### **Database Operations**
+- **Always use WAL mode** with proper checkpoint management
+- **Implement exponential backoff** for lock conflicts
+- **Create migration backups** before schema changes
+- **Monitor WAL file growth** and force checkpoints when needed
+- **Use savepoints** for complex transaction rollbacks
+
+### **File System Operations**
+- **Check disk space** before large operations
+- **Resolve symlinks safely** with loop detection
+- **Handle network drive timeouts** with offline caching
+- **Validate file paths** for security and length limits
+- **Monitor permissions** and escalate appropriately
+
+### **Backup & Recovery**
+- **Verify checksums** immediately after backup creation
+- **Use resumable uploads** for cloud storage
+- **Implement circuit breakers** for API failures
+- **Test restoration** procedures regularly
+- **Maintain backup integrity databases**
+
+### **Import/Export Operations**
+- **Stream large files** in chunks to prevent memory exhaustion
+- **Detect encoding** with confidence thresholds
+- **Handle conversion errors** with replacement strategies
+- **Monitor memory usage** during batch operations
+- **Provide progress indicators** for long-running operations
+
+### **Testing & Monitoring**
+- **Generate edge case tests** automatically
+- **Monitor real-time metrics** for early warning
+- **Validate data integrity** after all operations
+- **Log detailed error information** for debugging
+- **Implement graceful degradation** for failure scenarios
+
+This analysis provides production-ready patterns for handling the most critical database and file system edge cases that can cause application failures, data corruption, or poor user experiences.

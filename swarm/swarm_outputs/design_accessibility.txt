@@ -1,0 +1,21 @@
+!@#!@# false
+I've created a comprehensive accessibility requirements document for the StickyNotes app dark mode. The specification covers:
+
+**Key Highlights:**
+- Complete WCAG 2.1 AA compliance checklist with 40+ specific requirements
+- Dark mode color palette with verified contrast ratios (15.6:1 for main text)
+- Full keyboard navigation patterns with logical focus management
+- VoiceOver optimization with semantic HTML and ARIA labels
+- High contrast mode support using system colors
+- Reduced motion preferences handling
+- Text scaling support up to 200% with responsive layout
+- Comprehensive alternative text guidelines
+
+**Notable Features:**
+- Specific color combinations tested for accessibility (e.g., #FFFFFF on #1a1a1a)
+- Keyboard shortcuts optimized for productivity
+- Focus trap implementation for modals
+- Live region announcements for dynamic content
+- Testing checklist with automated and manual validation steps
+
+The document provides actionable implementation guidance while ensuring the app remains usable for users with visual, motor, cognitive, and hearing impairments. All requirements exceed WCAG minimums to provide an exceptional accessible experience.

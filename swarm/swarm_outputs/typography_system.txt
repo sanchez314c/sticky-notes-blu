@@ -1,0 +1,19 @@
+!@#!@# false
+I've created a comprehensive typography design system for your dark-mode StickyNotes application. This specification addresses all your requirements:
+
+## Key Design Decisions:
+
+**Font Selection**: Inter as primary (screen-optimized), JetBrains Mono for code
+**Type Scale**: 1.25 ratio system with 10 hierarchical levels
+**Dark Mode Colors**: High-contrast system exceeding WCAG AAA standards
+**Accessibility**: Dyslexia-friendly options and alternative viewing modes
+
+## Notable Features:
+
+- **Note-Type Specific Typography**: Different styling for standard notes, code notes, meeting notes, research notes, and task lists
+- **Responsive Design**: Fluid typography that adapts to different screen sizes
+- **Performance Optimized**: Font loading strategies and bundle optimization
+- **Accessibility Compliant**: 21:1 contrast ratios, dyslexia-friendly alternatives
+- **Implementation Ready**: Complete CSS custom properties and utility classes
+
+The system balances personality with functionality, ensuring excellent readability in dark environments while providing the flexibility needed for different note types and user preferences.

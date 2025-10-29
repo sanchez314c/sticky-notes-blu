@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sticky Note - Ultra Performance Optimized</title>
+    
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; media-src 'none';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta http-equiv="Referrer-Policy" content="no-referrer">
+    <meta http-equiv="x-dns-prefetch-control" content="off">
+    
+    <!-- Performance Hints -->
+    <meta name="theme-color" content="#667eea">
+    <meta name="color-scheme" content="dark">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="format-detection" content="date=no">
+    <meta name="format-detection" content="address=no">
+    <meta name="format-detection" content="email=no">
+    
+    <!-- Critical CSS Inlined for Performance -->
+    <style>
+        /* Critical path CSS - inlined for immediate rendering */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transform: translateZ(0);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: transparent;
+            overflow: hidden;
+            user-select: none;
+            will-change: transform;
+            transform: translateZ(0);
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeSpeed;
+        }
+        
+        .sticky-note {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            will-change: transform, opacity;
+            transform: translateZ(0);
+            contain: layout style paint;
+            backface-visibility: hidden;
+            animation: noteAppear 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        @keyframes noteAppear {
+            from { opacity: 0; transform: scale(0.9) translateZ(0); }
+            to { opacity: 1; transform: scale(1) translateZ(0); }
+        }
+    </style>
+    
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="styles-performance-optimized.css" as="style">
+    <link rel="preload" href="ui-performance-optimizer.js" as="script">
+    <link rel="preload" href="renderer-performance-optimized.js" as="script">
+    
+    <!-- Non-Critical CSS (Async Loading) -->
+    <link rel="stylesheet" href="styles-performance-optimized.css" media="print" onload="this.media='all'; this.onload=null;">
+    <noscript><link rel="stylesheet" href="styles-performance-optimized.css"></noscript>
+</head>
+<body>
+    <!-- Performance-Optimized Sticky Note Structure -->
+    <div class="sticky-note gradient-1 gpu-accelerated contained" id="stickyNote">
+        <!-- Header with Drag Functionality -->
+        <div class="note-header no-paint">
+            <div class="note-controls gpu-accelerated">
+                <button class="control-btn close-btn gpu-accelerated" 
+                        id="closeBtn" 
+                        title="Close Note (Cmd+W)" 
+                        tabindex="-1"
+                        aria-label="Close note"></button>
+                <button class="control-btn minimize-btn gpu-accelerated" 
+                        id="minimizeBtn" 
+                        title="Minimize (Cmd+M)" 
+                        tabindex="-1"
+                        aria-label="Minimize note"></button>
+                <button class="control-btn new-btn gpu-accelerated" 
+                        id="newBtn" 
+                        title="New Note (Cmd+N)" 
+                        tabindex="-1"
+                        aria-label="Create new note"></button>
+            </div>
+            <div class="note-actions gpu-accelerated">
+                <div class="color-picker gradient-1 gpu-accelerated" 
+                     id="colorPicker" 
+                     title="Change Color" 
+                     tabindex="-1"
+                     role="button"
+                     aria-label="Change note color"></div>
+            </div>
+        </div>
+        
+        <!-- Color Dropdown with Optimized Rendering -->
+        <div class="color-dropdown contained" id="colorDropdown" role="menu" aria-label="Color options">
+            <div class="color-swatch gradient-1 gpu-accelerated" data-gradient="gradient-1" title="Purple Blue" role="menuitem"></div>
+            <div class="color-swatch gradient-2 gpu-accelerated" data-gradient="gradient-2" title="Pink Red" role="menuitem"></div>
+            <div class="color-swatch gradient-3 gpu-accelerated" data-gradient="gradient-3" title="Blue Cyan" role="menuitem"></div>
+            <div class="color-swatch gradient-4 gpu-accelerated" data-gradient="gradient-4" title="Green Mint" role="menuitem"></div>
+            <div class="color-swatch gradient-5 gpu-accelerated" data-gradient="gradient-5" title="Pink Yellow" role="menuitem"></div>
+            <div class="color-swatch gradient-6 gpu-accelerated" data-gradient="gradient-6" title="Cyan Purple" role="menuitem"></div>
+            <div class="color-swatch gradient-7 gpu-accelerated" data-gradient="gradient-7" title="Mint Pink" role="menuitem"></div>
+            <div class="color-swatch gradient-8 gpu-accelerated" data-gradient="gradient-8" title="Rose Pink" role="menuitem"></div>
+            <div class="color-swatch gradient-9 gpu-accelerated" data-gradient="gradient-9" title="Lavender Blue" role="menuitem"></div>
+            <div class="color-swatch gradient-10 gpu-accelerated" data-gradient="gradient-10" title="Pink Gray" role="menuitem"></div>
+            <div class="color-swatch gradient-11 gpu-accelerated" data-gradient="gradient-11" title="Blue Light" role="menuitem"></div>
+            <div class="color-swatch gradient-12 gpu-accelerated" data-gradient="gradient-12" title="Rose Cream" role="menuitem"></div>
+            <div class="color-swatch gradient-dark gpu-accelerated" data-gradient="gradient-dark" title="Dark" role="menuitem"></div>
+            <div class="color-swatch gradient-light gpu-accelerated" data-gradient="gradient-light" title="Light" role="menuitem"></div>
+            <div class="color-swatch gradient-gold gpu-accelerated" data-gradient="gradient-gold" title="Gold" role="menuitem"></div>
+            <div class="color-swatch gradient-silver gpu-accelerated" data-gradient="gradient-silver" title="Silver" role="menuitem"></div>
+        </div>
+        
+        <!-- Content Area with Layout Optimization -->
+        <div class="note-content no-layout">
+            <textarea class="note-textarea" 
+                      id="noteContent" 
+                      placeholder="Start typing your note..."
+                      spellcheck="false"
+                      autocomplete="off"
+                      autocorrect="off"
+                      autocapitalize="off"
+                      aria-label="Note content"
+                      role="textbox"
+                      tabindex="0"></textarea>
+        </div>
+        
+        <!-- Footer with Minimal Repainting -->
+        <div class="note-footer no-paint" id="noteFooter">
+            <span id="lastModified">Just now</span>
+        </div>
+    </div>
+
+    <!-- Performance Scripts - Loaded Asynchronously -->
+    <script>
+        // Immediate performance optimizations
+        
+        // Prevent layout thrashing during initialization
+        document.documentElement.style.willChange = 'transform';
+        
+        // GPU layer promotion for smoother animations
+        const stickyNote = document.getElementById('stickyNote');
+        if (stickyNote) {
+            stickyNote.style.transform = 'translateZ(0)';
+        }
+        
+        // Critical resource loading with error handling
+        function loadScript(src, callback) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.onload = callback;
+            script.onerror = () => console.error(`Failed to load ${src}`);
+            document.head.appendChild(script);
+        }
+        
+        // Load performance optimizer first
+        loadScript('ui-performance-optimizer.js', () => {
+            console.log('UI Performance Optimizer loaded');
+            
+            // Then load the optimized renderer
+            loadScript('renderer-performance-optimized.js', () => {
+                console.log('Performance Optimized Renderer loaded');
+                
+                // Initialize performance monitoring
+                if (window.uiOptimizer) {
+                    window.uiOptimizer.startPerformanceMonitoring();
+                }
+            });
+        });
+        
+        // Preload font for better text rendering
+        const fontPreload = document.createElement('link');
+        fontPreload.rel = 'preload';
+        fontPreload.href = 'data:font/woff2;base64,'; // System font preload
+        fontPreload.as = 'font';
+        fontPreload.type = 'font/woff2';
+        fontPreload.crossOrigin = 'anonymous';
+        document.head.appendChild(fontPreload);
+        
+        // Optimize scroll performance
+        let ticking = false;
+        function optimizeScroll() {
+            const textarea = document.getElementById('noteContent');
+            if (textarea) {
+                textarea.addEventListener('scroll', () => {
+                    if (!ticking) {
+                        requestAnimationFrame(() => {
+                            // Scroll optimization logic here
+                            ticking = false;
+                        });
+                        ticking = true;
+                    }
+                }, { passive: true });
+            }
+        }
+        
+        // Initialize optimizations when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', optimizeScroll);
+        } else {
+            optimizeScroll();
+        }
+        
+        // Performance monitoring
+        if (performance.mark) {
+            performance.mark('page-load-start');
+            
+            window.addEventListener('load', () => {
+                performance.mark('page-load-end');
+                performance.measure('page-load-duration', 'page-load-start', 'page-load-end');
+                
+                const measures = performance.getEntriesByType('measure');
+                measures.forEach(measure => {
+                    console.log(`${measure.name}: ${measure.duration.toFixed(2)}ms`);
+                });
+            });
+        }
+        
+        // Error boundary for performance scripts
+        window.addEventListener('error', (event) => {
+            console.error('Performance script error:', event.error);
+            // Fallback to basic functionality
+            if (event.filename && event.filename.includes('performance')) {
+                console.log('Loading fallback renderer...');
+                loadScript('renderer.js');
+            }
+        });
+    </script>
+    
+    <!-- Service Worker for Caching (Optional) -->
+    <script>
+        // Register service worker for caching if available
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(err => {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+        }
+    </script>
+</body>
+</html>

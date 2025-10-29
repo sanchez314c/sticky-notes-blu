@@ -1,0 +1,23 @@
+!@#!@# false
+I've created a comprehensive UX/UI requirements document for your macOS Electron sticky notes app. The specification covers:
+
+**Key Design Principles:**
+- **Platform-native integration** with macOS design language, SF fonts, and system behaviors
+- **Complete WCAG 2.1 AA accessibility** including screen readers, keyboard navigation, and color contrast
+- **Sophisticated dark mode** with vibrancy effects and system preference sync
+- **Intuitive interaction patterns** for note creation, editing, and desktop integration
+
+**Technical Highlights:**
+- Detailed component hierarchy and architecture
+- Comprehensive keyboard shortcut system
+- Performance requirements targeting 60fps animations
+- Multi-display support with position memory
+- Smart window management avoiding dock/menu bar conflicts
+
+**User Experience Focus:**
+- Seamless inline editing with auto-save
+- Floating desktop integration with smart positioning
+- Rich accessibility support for all users
+- Consistent with macOS human interface guidelines
+
+The document is structured for implementation in phases, starting with core functionality and building up to advanced features. Each section includes specific technical requirements and design tokens to ensure consistent implementation.

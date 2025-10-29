@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en" style="margin: 0; padding: 0; overflow: hidden;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Optimized Sticky Note</title>
+    
+    <!-- Memory optimization meta tags -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="renderer" content="webkit">
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- CSP for security -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline';
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data: blob:;
+        font-src 'self';
+        connect-src 'none';
+        frame-src 'none';
+        object-src 'none';
+        media-src 'none';
+    ">
+    
+    <style>
+        /* Memory optimized CSS with reduced reflows */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: transparent;
+        }
+
+        .sticky-note {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            will-change: transform;
+            transform: translateZ(0);
+        }
+
+        .note-header {
+            height: 40px;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: grab;
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        .note-header:active {
+            cursor: grabbing;
+        }
+
+        .note-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .control-btn {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+            position: relative;
+            padding: 0;
+            will-change: opacity;
+        }
+
+        .control-btn:hover {
+            opacity: 0.8;
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .close-btn {
+            background: #ff5f57;
+        }
+
+        .minimize-btn {
+            background: #ffbd2e;
+        }
+
+        .new-btn {
+            background: #28ca42;
+        }
+
+        .note-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .color-picker {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            position: relative;
+            will-change: transform;
+        }
+
+        .color-picker:hover {
+            transform: scale(1.1);
+        }
+
+        .color-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 4px;
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
+            padding: 8px;
+            display: none;
+            z-index: 1000;
+            min-width: 120px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .color-dropdown.show {
+            display: block;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .color-swatch {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            border: 2px solid transparent;
+            will-change: transform;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.1);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .note-content {
+            flex: 1;
+            width: 100%;
+            border: none;
+            background: transparent;
+            resize: none;
+            outline: none;
+            padding: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.9);
+            font-family: inherit;
+            will-change: contents;
+        }
+
+        .note-content::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            font-style: italic;
+        }
+
+        .note-footer {
+            height: 24px;
+            padding: 4px 12px;
+            background: rgba(0, 0, 0, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            flex-shrink: 0;
+        }
+
+        .save-indicator {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            color: #28ca42;
+            font-size: 10px;
+        }
+
+        /* Resize handles */
+        .resize-handle {
+            position: absolute;
+            background: transparent;
+            z-index: 10;
+        }
+
+        .resize-handle.se {
+            bottom: 0;
+            right: 0;
+            width: 16px;
+            height: 16px;
+            cursor: se-resize;
+        }
+
+        .resize-handle.s {
+            bottom: 0;
+            left: 16px;
+            right: 16px;
+            height: 4px;
+            cursor: s-resize;
+        }
+
+        .resize-handle.e {
+            right: 0;
+            top: 16px;
+            bottom: 16px;
+            width: 4px;
+            cursor: e-resize;
+        }
+
+        /* Gradient themes with GPU acceleration */
+        .gradient-1 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .gradient-2 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .gradient-3 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .gradient-4 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .gradient-5 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .gradient-6 { background: linear-gradient(135deg, #30cfd0 0%, #91a7ff 100%); }
+        .gradient-7 { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .gradient-8 { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
+        .gradient-9 { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+        .gradient-10 { background: linear-gradient(135deg, #ff8a80 0%, #ea80fc 100%); }
+        .gradient-11 { background: linear-gradient(135deg, #8fd3f4 0%, #84fab0 100%); }
+        .gradient-12 { background: linear-gradient(135deg, #cfd9df 0%, #e2ebf0 100%); }
+        .gradient-dark { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); }
+        .gradient-light { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); color: #333; }
+        .gradient-gold { background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%); }
+        .gradient-silver { background: linear-gradient(135deg, #bdc3c7 0%, #95a5a6 100%); }
+
+        /* Performance optimizations */
+        .sticky-note * {
+            backface-visibility: hidden;
+            perspective: 1000px;
+        }
+
+        /* Scrollbar styling */
+        .note-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .note-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .note-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .note-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Animation optimizations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .sticky-note {
+            animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Context menu styling */
+        .context-menu {
+            position: fixed;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 6px 0;
+            min-width: 150px;
+            z-index: 10000;
+            display: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            font-size: 13px;
+            will-change: opacity, transform;
+        }
+
+        /* Memory optimization classes */
+        .memory-optimized {
+            contain: layout style paint;
+        }
+
+        .gpu-accelerated {
+            transform: translateZ(0);
+            will-change: transform;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="stickyNote" class="sticky-note gradient-1 memory-optimized">
+        <!-- Note Header -->
+        <div class="note-header">
+            <div class="note-controls">
+                <button id="closeBtn" class="control-btn close-btn" title="Close note" aria-label="Close note"></button>
+                <button id="minimizeBtn" class="control-btn minimize-btn" title="Minimize note" aria-label="Minimize note"></button>
+                <button id="newBtn" class="control-btn new-btn" title="New note" aria-label="Create new note"></button>
+            </div>
+            
+            <div class="note-actions">
+                <div id="colorPicker" class="color-picker gradient-1" title="Change color" aria-label="Color picker">
+                    <div id="colorDropdown" class="color-dropdown">
+                        <div class="color-grid">
+                            <div class="color-swatch gradient-1" data-gradient="gradient-1"></div>
+                            <div class="color-swatch gradient-2" data-gradient="gradient-2"></div>
+                            <div class="color-swatch gradient-3" data-gradient="gradient-3"></div>
+                            <div class="color-swatch gradient-4" data-gradient="gradient-4"></div>
+                            <div class="color-swatch gradient-5" data-gradient="gradient-5"></div>
+                            <div class="color-swatch gradient-6" data-gradient="gradient-6"></div>
+                            <div class="color-swatch gradient-7" data-gradient="gradient-7"></div>
+                            <div class="color-swatch gradient-8" data-gradient="gradient-8"></div>
+                            <div class="color-swatch gradient-9" data-gradient="gradient-9"></div>
+                            <div class="color-swatch gradient-10" data-gradient="gradient-10"></div>
+                            <div class="color-swatch gradient-11" data-gradient="gradient-11"></div>
+                            <div class="color-swatch gradient-12" data-gradient="gradient-12"></div>
+                            <div class="color-swatch gradient-dark" data-gradient="gradient-dark"></div>
+                            <div class="color-swatch gradient-light" data-gradient="gradient-light"></div>
+                            <div class="color-swatch gradient-gold" data-gradient="gradient-gold"></div>
+                            <div class="color-swatch gradient-silver" data-gradient="gradient-silver"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Note Content -->
+        <textarea 
+            id="noteContent" 
+            class="note-content" 
+            placeholder="Start typing your note..."
+            spellcheck="true"
+            autocomplete="off"
+            autocorrect="on"
+            autocapitalize="sentences"
+        ></textarea>
+
+        <!-- Note Footer -->
+        <div id="noteFooter" class="note-footer">
+            <span id="lastModified">Never modified</span>
+            <span id="saveIndicator" class="save-indicator">●</span>
+        </div>
+
+        <!-- Resize Handles -->
+        <div class="resize-handle se" data-direction="se"></div>
+        <div class="resize-handle s" data-direction="s"></div>
+        <div class="resize-handle e" data-direction="e"></div>
+    </div>
+
+    <!-- Memory optimized renderer script -->
+    <script src="renderer-optimized.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+!@#!@# false
+**IPC Channel Definitions:**
+```typescript
+enum IPCChannels {
+  // Note operations
+  CREATE_NOTE = 'note:create',
+  UPDATE_NOTE = 'note:update',
+  DELETE_NOTE = 'note:delete',
+  LOAD_NOTES = 'note:load-all',
+  
+  // Window management
+  SET_ALWAYS_ON_TOP = 'window:always-on-top',
+  UPDATE_POSITION = 'window:update-position',
+  
+  // Theme operations
+  TOGGLE_THEME = 'theme:toggle',
+  GET_THEME = 'theme:get'
+}
+```
+
+**Core Service APIs:**
+```typescript
+interface NoteService {
+  createNote(content: string, position?: Position): Promise<StickyNote>;
+  updateNote(id: string, updates: Partial<StickyNote>): Promise<void>;
+  deleteNote(id: string): Promise<void>;
+  getAllNotes(): Promise<StickyNote[]>;
+  syncNoteAcrossWindows(note: StickyNote): void;
+}
+```
+
+### Implementation Priority
+
+**Phase 1** (Core Functionality):
+- Data Storage Module
+- Note Management Module  
+- Core Application Module
+
+**Phase 2** (UI & Interaction):
+- Window Renderer Module
+- IPC Communication Module
+- UI Theme Module
+
+**Phase 3** (Enhancement):
+- System Integration Module
+- Advanced features (shortcuts, notifications)
+
+This architecture ensures modularity, testability, and maintainability while delivering a clean, modern dark-mode sticky notes experience that floats seamlessly on the macOS desktop.

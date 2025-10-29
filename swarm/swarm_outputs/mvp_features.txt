@@ -1,0 +1,10 @@
+!@#!@# false
+## 💭 KEY INSIGHTS
+
+**The MVP should feel like "digital Post-its that actually work"** - familiar interaction model but with digital advantages (persistence, colors, formatting).
+
+**Competitive advantage lies in simplicity + polish**, not feature richness. Users want sticky notes to be frictionless, not another complex productivity app.
+
+**macOS native integration is crucial** - users expect it to feel like it belongs on their Mac, not like a ported web app.
+
+The feature set above gives you a complete, competitive sticky notes app while maintaining the simplicity that makes sticky notes appealing in the first place.

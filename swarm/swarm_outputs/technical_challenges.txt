@@ -1,0 +1,139 @@
+!@#!@# false
+## 6. Window Positioning Across Screens/Spaces 🖥️
+
+**Challenges:**
+- Multi-monitor setups with different resolutions/scaling
+- MacOS Spaces and full-screen apps
+- Windows virtual desktops
+- Screen rotation and dynamic display changes
+- Restoring positions after system restart
+
+**Solutions:**
+```javascript
+// Advanced display management
+class DisplayManager {
+  constructor() {
+    this.displays = screen.getAllDisplays();
+    this.setupDisplayHandlers();
+  }
+
+  setupDisplayHandlers() {
+    screen.on('display-added', this.handleDisplayChange.bind(this));
+    screen.on('display-removed', this.handleDisplayChange.bind(this));
+    screen.on('display-metrics-changed', this.handleDisplayChange.bind(this));
+  }
+
+  // Smart positioning algorithm  
+  findOptimalPosition(noteId, preferredDisplay = null) {
+    const displays = screen.getAllDisplays();
+    const targetDisplay = preferredDisplay || screen.getPrimaryDisplay();
+    
+    const { width, height } = targetDisplay.workAreaSize;
+    const { x: displayX, y: displayY } = targetDisplay.workArea;
+    
+    // Grid-based positioning to avoid overlaps
+    const gridSize = { x: Math.floor(width / 320), y: Math.floor(height / 240) };
+    const occupiedPositions = this.getOccupiedGridPositions(targetDisplay);
+    
+    // Find first available grid position
+    for (let row = 0; row < gridSize.y; row++) {
+      for (let col = 0; col < gridSize.x; col++) {
+        const gridKey = `${col},${row}`;
+        if (!occupiedPositions.has(gridKey)) {
+          return {
+            x: displayX + (col * 320) + 20,
+            y: displayY + (row * 240) + 20
+          };
+        }
+      }
+    }
+    
+    // Fallback: cascade positioning
+    return this.getCascadePosition(noteId, targetDisplay);
+  }
+
+  // Restore positions with validation
+  restoreWindowPosition(noteId, savedPosition) {
+    const displays = screen.getAllDisplays();
+    
+    // Check if saved position is still valid
+    const isPositionValid = displays.some(display => {
+      const bounds = display.bounds;
+      return savedPosition.x >= bounds.x && 
+             savedPosition.x < bounds.x + bounds.width &&
+             savedPosition.y >= bounds.y &&
+             savedPosition.y < bounds.y + bounds.height;
+    });
+    
+    if (isPositionValid) {
+      return savedPosition;
+    } else {
+      // Find closest display and reposition
+      return this.findOptimalPosition(noteId, this.findClosestDisplay(savedPosition));
+    }
+  }
+
+  // Spaces-aware positioning (MacOS)
+  handleSpacesIntegration() {
+    if (process.platform === 'darwin') {
+      return {
+        getCurrentSpace: () => {
+          // Use native module to detect current space
+          return require('./native/spaces').getCurrentSpace();
+        },
+        
+        moveNoteToSpace: (noteWindow, spaceId) => {
+          noteWindow.setVisibleOnAllWorkspaces(false);
+          // Platform-specific space assignment
+        },
+        
+        onSpaceChange: (callback) => {
+          // Listen for space transitions
+          require('./native/spaces').onSpaceChange(callback);
+        }
+      };
+    }
+  }
+}
+
+// Cross-platform window state persistence
+const windowStateManager = {
+  saveState: (noteId, window) => {
+    const bounds = window.getBounds();
+    const display = screen.getDisplayNearestPoint({ x: bounds.x, y: bounds.y });
+    
+    return {
+      bounds,
+      displayId: display.id,
+      isMaximized: window.isMaximized(),
+      isMinimized: window.isMinimized(),
+      spaceId: process.platform === 'darwin' ? getCurrentSpace() : null
+    };
+  },
+  
+  restoreState: (noteId, savedState) => {
+    const window = new BrowserWindow(windowOptions);
+    
+    // Validate and restore position
+    const position = displayManager.restoreWindowPosition(noteId, savedState.bounds);
+    window.setBounds(position);
+    
+    // Restore window state
+    if (savedState.isMaximized) window.maximize();
+    if (savedState.isMinimized) window.minimize();
+    
+    return window;
+  }
+};
+```
+
+## Summary: Key Technical Solutions 🎯
+
+1. **Window Management**: Factory pattern + focus management system
+2. **Performance**: Window pooling + shared renderer architecture  
+3. **Persistence**: Atomic writes + WAL SQLite + debounced saves
+4. **MacOS Integration**: Spaces awareness + dock hiding + accessibility
+5. **Memory**: GC monitoring + virtual scrolling + process hibernation
+6. **Multi-display**: Grid positioning + display change handlers + state validation
+
+The combination of these approaches should create a robust, performant sticky notes application that handles the unique challenges of floating window management while maintaining native OS integration.

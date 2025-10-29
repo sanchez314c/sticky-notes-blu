@@ -1,0 +1,30 @@
+!@#!@# false
+## 📱 **Daily Usage Scenarios**
+
+### Morning Workflow
+1. **System Startup**: Notes fade in at remembered positions
+2. **Daily Planning**: Create note for today's priorities
+3. **Reminder Setting**: Set notification for important meeting
+
+### Work Session
+1. **Quick Capture**: `⌘⇧N` for fleeting thoughts
+2. **Reference Material**: Pin important info beside work window
+3. **Status Updates**: Color-code notes by urgency/completion
+
+### Evening Wrap-up
+1. **Review & Archive**: Mark completed items, archive old notes
+2. **Tomorrow Prep**: Create note for next day's first task
+3. **System Clean**: Auto-cleanup of empty/old notes
+
+---
+
+## 🎯 **Key UX Principles Applied**
+
+✅ **Minimal Cognitive Load**: One primary action per gesture
+✅ **Discoverability**: Visual cues guide user behavior
+✅ **Consistency**: Follows macOS Human Interface Guidelines
+✅ **Forgiveness**: Easy undo/redo for all actions
+✅ **Performance**: Smooth 60fps animations, instant response
+✅ **Accessibility**: Full compatibility with assistive technologies
+
+This design creates a sticky notes experience that feels like a natural extension of macOS, providing powerful functionality without overwhelming complexity.

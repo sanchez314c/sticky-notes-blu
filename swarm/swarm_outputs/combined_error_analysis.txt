@@ -1,0 +1,1837 @@
+!@#!@# false
+# ELECTRON ERROR EXPERT 1: CRITICAL FAILURE MODES ANALYSIS
+
+## DATABASE CORRUPTION & RECOVERY
+
+### Critical Scenarios & Error Codes
+
+```typescript
+// Core corruption detection system
+class DatabaseCorruptionHandler {
+  async detectCorruption(): Promise<CorruptionType | null> {
+    try {
+      // PRAGMA integrity_check returns 'ok' or corruption details
+      const result = await this.db.get('PRAGMA integrity_check');
+      if (result.integrity_check !== 'ok') {
+        return CorruptionType.STRUCTURAL;
+      }
+      
+      // Quick table validation
+      await this.db.get('SELECT COUNT(*) FROM notes LIMIT 1');
+      return null;
+    } catch (error) {
+      return this.classifyCorruption(error.code);
+    }
+  }
+
+  private classifyCorruption(errorCode: string): CorruptionType {
+    switch (errorCode) {
+      case 'SQLITE_CORRUPT': // Error 11
+        return CorruptionType.DATA_CORRUPTION;
+      case 'SQLITE_NOTADB': // Error 26
+        return CorruptionType.INVALID_DATABASE;
+      case 'SQLITE_CANTOPEN': // Error 14
+        return CorruptionType.ACCESS_FAILURE;
+      default:
+        return CorruptionType.UNKNOWN;
+    }
+  }
+}
+```
+
+### WAL Mode Recovery Strategy
+
+```typescript
+class WALRecoverySystem {
+  async initializeWALMode(): Promise<void> {
+    // Enable WAL mode for crash recovery
+    await this.db.exec('PRAGMA journal_mode=WAL');
+    await this.db.exec('PRAGMA wal_autocheckpoint=1000');
+    await this.db.exec('PRAGMA synchronous=NORMAL');
+  }
+
+  async recoverFromWAL(): Promise<RecoveryResult> {
+    try {
+      // Force WAL checkpoint to recover pending transactions
+      const result = await this.db.get('PRAGMA wal_checkpoint(TRUNCATE)');
+      
+      if (result.busy === 0 && result.log === 0) {
+        return { success: true, recoveredTransactions: result.checkpointed };
+      }
+      
+      // Manual recovery if checkpoint fails
+      return await this.performManualWALRecovery();
+    } catch (error) {
+      throw new WALRecoveryError(error.message);
+    }
+  }
+}
+```
+
+### Automatic Backup & Recovery
+
+```typescript
+class DatabaseBackupSystem {
+  async createIncrementalBackup(): Promise<string> {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = path.join(this.backupDir, `notes_${timestamp}.db`);
+    
+    try {
+      // SQLite backup API for consistent snapshots
+      const backup = await this.db.backup(backupPath);
+      
+      // Verify backup integrity immediately
+      const backupDb = new Database(backupPath, { readonly: true });
+      const integrityCheck = await backupDb.get('PRAGMA integrity_check');
+      backupDb.close();
+      
+      if (integrityCheck.integrity_check !== 'ok') {
+        fs.unlinkSync(backupPath);
+        throw new Error('Backup integrity verification failed');
+      }
+      
+      return backupPath;
+    } catch (error) {
+      throw new BackupError(`Backup creation failed: ${error.message}`);
+    }
+  }
+
+  async recoverFromBackup(backupPath: string): Promise<void> {
+    // Show recovery UI
+    this.showRecoveryDialog('Recovering from backup...');
+    
+    try {
+      // Validate backup before restoration
+      await this.validateBackup(backupPath);
+      
+      // Atomic replacement
+      const tempPath = this.dbPath + '.temp';
+      fs.copyFileSync(backupPath, tempPath);
+      fs.renameSync(tempPath, this.dbPath);
+      
+      this.notifyRecoverySuccess();
+    } catch (error) {
+      this.notifyRecoveryFailure(error.message);
+      throw error;
+    }
+  }
+}
+```
+
+### User Experience During Recovery
+
+```typescript
+class RecoveryUIManager {
+  showRecoveryDialog(message: string, progress?: number): void {
+    const recoveryWindow = new BrowserWindow({
+      width: 400,
+      height: 200,
+      resizable: false,
+      modal: true,
+      show: false
+    });
+
+    recoveryWindow.loadHTML(`
+      <div class="recovery-dialog">
+        <div class="recovery-icon">🔧</div>
+        <h3>Database Recovery</h3>
+        <p>${message}</p>
+        ${progress !== undefined ? `
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${progress}%"></div>
+          </div>
+        ` : ''}
+        <div class="recovery-warning">
+          ⚠️ Some recent changes may be lost
+        </div>
+      </div>
+    `);
+
+    recoveryWindow.show();
+  }
+}
+```
+
+## FILESYSTEM PERMISSION ERRORS
+
+### Permission Monitoring System
+
+```typescript
+class FileSystemPermissionManager {
+  async checkPermissions(path: string): Promise<PermissionStatus> {
+    try {
+      await fs.access(path, fs.constants.R_OK | fs.constants.W_OK);
+      return PermissionStatus.GRANTED;
+    } catch (error) {
+      switch (error.code) {
+        case 'EACCES': // Permission denied
+          return PermissionStatus.DENIED;
+        case 'EPERM': // Operation not permitted
+          return PermissionStatus.RESTRICTED;
+        case 'ENOENT': // Path doesn't exist
+          return PermissionStatus.PATH_NOT_FOUND;
+        default:
+          return PermissionStatus.UNKNOWN_ERROR;
+      }
+    }
+  }
+
+  async handlePermissionFailure(originalPath: string): Promise<string> {
+    // Fallback hierarchy
+    const fallbackPaths = [
+      path.join(os.tmpdir(), 'sticky-notes'),
+      path.join(os.homedir(), '.sticky-notes-fallback'),
+      path.join(__dirname, 'emergency-storage')
+    ];
+
+    for (const fallbackPath of fallbackPaths) {
+      try {
+        await fs.mkdir(fallbackPath, { recursive: true });
+        const status = await this.checkPermissions(fallbackPath);
+        
+        if (status === PermissionStatus.GRANTED) {
+          this.notifyFallbackLocation(fallbackPath);
+          return fallbackPath;
+        }
+      } catch (error) {
+        console.warn(`Fallback path failed: ${fallbackPath}`, error);
+      }
+    }
+
+    throw new Error('No writable storage location available');
+  }
+}
+```
+
+### Runtime Permission Monitoring
+
+```typescript
+class RuntimePermissionWatcher {
+  private permissionWatcher: fs.FSWatcher | null = null;
+
+  startMonitoring(storagePath: string): void {
+    try {
+      this.permissionWatcher = fs.watch(path.dirname(storagePath), (eventType, filename) => {
+        if (filename && path.resolve(filename) === storagePath) {
+          this.validatePermissions();
+        }
+      });
+    } catch (error) {
+      console.warn('Permission monitoring unavailable:', error.message);
+    }
+  }
+
+  private async validatePermissions(): Promise<void> {
+    const status = await this.permissionManager.checkPermissions(this.storagePath);
+    
+    if (status !== PermissionStatus.GRANTED) {
+      // Pause auto-save and notify user
+      this.pauseAutoSave();
+      this.showPermissionError(status);
+    }
+  }
+}
+```
+
+### Permission Request Flow
+
+```typescript
+class PermissionRequestHandler {
+  async requestStoragePermission(path: string): Promise<boolean> {
+    const dialog = new BrowserWindow({
+      width: 500,
+      height: 300,
+      modal: true,
+      resizable: false
+    });
+
+    return new Promise((resolve) => {
+      dialog.loadHTML(`
+        <div class="permission-request">
+          <h2>Storage Permission Required</h2>
+          <p>StickyNotes needs permission to write to:</p>
+          <code>${path}</code>
+          
+          <div class="permission-buttons">
+            <button onclick="window.electronAPI.selectNewLocation()">
+              Choose Different Location
+            </button>
+            <button onclick="window.electronAPI.requestSystemPermission()">
+              Grant Permission
+            </button>
+          </div>
+        </div>
+      `);
+
+      ipcMain.once('permission-result', (_, granted) => {
+        dialog.close();
+        resolve(granted);
+      });
+    });
+  }
+}
+```
+
+## APPLICATION CRASH RECOVERY
+
+### Crash Detection & Dump Collection
+
+```typescript
+class CrashRecoverySystem {
+  initializeCrashReporting(): void {
+    // Electron crash reporter
+    crashReporter.start({
+      productName: 'StickyNotes',
+      companyName: 'YourCompany',
+      submitURL: 'https://your-crash-server.com/crashes',
+      uploadToServer: false, // Store locally for privacy
+      extra: {
+        version: app.getVersion(),
+        platform: process.platform
+      }
+    });
+
+    // Process monitoring
+    process.on('uncaughtException', this.handleUncaughtException.bind(this));
+    process.on('unhandledRejection', this.handleUnhandledRejection.bind(this));
+  }
+
+  private handleUncaughtException(error: Error): void {
+    console.error('Uncaught Exception:', error);
+    
+    // Save crash context
+    this.saveCrashContext({
+      type: 'uncaught-exception',
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString(),
+      openNotes: this.getOpenNotesState()
+    });
+
+    // Attempt graceful shutdown
+    this.performEmergencyShutdown();
+  }
+
+  private async saveCrashContext(context: CrashContext): Promise<void> {
+    const crashFile = path.join(this.crashDir, `crash_${Date.now()}.json`);
+    
+    try {
+      await fs.writeFile(crashFile, JSON.stringify(context, null, 2));
+    } catch (error) {
+      // If we can't save crash context, at least log it
+      console.error('Failed to save crash context:', error);
+    }
+  }
+}
+```
+
+### Auto-Restart with State Recovery
+
+```typescript
+class AutoRestartManager {
+  private healthCheckInterval: NodeJS.Timeout | null = null;
+
+  startHealthChecking(): void {
+    this.healthCheckInterval = setInterval(() => {
+      this.performHealthCheck();
+    }, 5000); // Check every 5 seconds
+  }
+
+  private async performHealthCheck(): Promise<void> {
+    try {
+      // Database connectivity check
+      await this.db.get('SELECT 1');
+      
+      // Window responsiveness check
+      const windows = BrowserWindow.getAllWindows();
+      for (const window of windows) {
+        if (!window.webContents.isLoading() && 
+            window.webContents.isDevToolsOpened() === false) {
+          // Send ping to renderer
+          const response = await this.sendPingToRenderer(window);
+          if (!response) {
+            throw new Error('Renderer not responding');
+          }
+        }
+      }
+      
+      this.recordHealthyState();
+    } catch (error) {
+      console.warn('Health check failed:', error.message);
+      this.handleUnhealthyState();
+    }
+  }
+
+  async recoverApplicationState(): Promise<void> {
+    try {
+      // Look for crash files
+      const crashFiles = await this.findCrashFiles();
+      
+      if (crashFiles.length > 0) {
+        const latestCrash = crashFiles[crashFiles.length - 1];
+        const crashData = JSON.parse(await fs.readFile(latestCrash, 'utf8'));
+        
+        // Show recovery dialog
+        const shouldRecover = await this.showRecoveryDialog(crashData);
+        
+        if (shouldRecover) {
+          await this.restoreFromCrashData(crashData);
+        }
+        
+        // Clean up crash files
+        await this.cleanupCrashFiles(crashFiles);
+      }
+    } catch (error) {
+      console.error('State recovery failed:', error);
+    }
+  }
+}
+```
+
+### Unsaved Data Recovery
+
+```typescript
+class UnsavedDataRecovery {
+  private tempFileManager = new TempFileManager();
+
+  async saveTemporaryData(noteId: string, content: string): Promise<void> {
+    const tempFile = path.join(this.tempDir, `temp_${noteId}_${Date.now()}.txt`);
+    
+    try {
+      await fs.writeFile(tempFile, JSON.stringify({
+        noteId,
+        content,
+        timestamp: new Date().toISOString(),
+        checksum: this.calculateChecksum(content)
+      }));
+      
+      // Keep only last 10 temp files per note
+      await this.cleanupOldTempFiles(noteId);
+    } catch (error) {
+      console.warn('Failed to save temporary data:', error);
+    }
+  }
+
+  async recoverUnsavedData(): Promise<RecoveryData[]> {
+    const recoveryData: RecoveryData[] = [];
+    
+    try {
+      const tempFiles = await fs.readdir(this.tempDir);
+      
+      for (const file of tempFiles) {
+        if (file.startsWith('temp_')) {
+          try {
+            const filePath = path.join(this.tempDir, file);
+            const data = JSON.parse(await fs.readFile(filePath, 'utf8'));
+            
+            // Verify data integrity
+            if (this.calculateChecksum(data.content) === data.checksum) {
+              recoveryData.push(data);
+            }
+          } catch (error) {
+            console.warn(`Failed to recover temp file ${file}:`, error);
+          }
+        }
+      }
+      
+      // Sort by timestamp, newest first
+      recoveryData.sort((a, b) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+      
+    } catch (error) {
+      console.error('Recovery data scan failed:', error);
+    }
+    
+    return recoveryData;
+  }
+}
+```
+
+## AUTO-SAVE FAILURES
+
+### Disk Space Monitoring
+
+```typescript
+class DiskSpaceMonitor {
+  private spaceCheckInterval: NodeJS.Timeout | null = null;
+
+  startMonitoring(): void {
+    this.spaceCheckInterval = setInterval(() => {
+      this.checkDiskSpace();
+    }, 30000); // Check every 30 seconds
+  }
+
+  private async checkDiskSpace(): Promise<void> {
+    try {
+      const stats = await fs.statvfs(this.storagePath);
+      const freeBytes = stats.bavail * stats.frsize;
+      const freeGB = freeBytes / (1024 * 1024 * 1024);
+      
+      if (freeGB < 0.1) { // Less than 100MB free
+        this.handleLowDiskSpace(freeBytes);
+      } else if (freeGB < 1.0) { // Less than 1GB free
+        this.warnLowDiskSpace(freeBytes);
+      }
+    } catch (error) {
+      console.warn('Disk space check failed:', error);
+    }
+  }
+
+  private handleLowDiskSpace(freeBytes: number): void {
+    // Disable auto-save to prevent corruption
+    this.autoSaveManager.disable();
+    
+    this.showDiskSpaceError({
+      freeSpace: this.formatBytes(freeBytes),
+      recommendedAction: 'Free up disk space to continue auto-saving'
+    });
+  }
+}
+```
+
+### Auto-Save Queue Management
+
+```typescript
+class AutoSaveQueueManager {
+  private saveQueue = new Map<string, AutoSaveTask>();
+  private processing = false;
+  private maxConcurrentSaves = 3;
+
+  async queueAutoSave(noteId: string, content: string): Promise<void> {
+    // Debounce rapid edits
+    const existingTask = this.saveQueue.get(noteId);
+    if (existingTask) {
+      existingTask.content = content;
+      existingTask.timestamp = Date.now();
+      return;
+    }
+
+    const task: AutoSaveTask = {
+      noteId,
+      content,
+      timestamp: Date.now(),
+      attempts: 0,
+      maxAttempts: 3
+    };
+
+    this.saveQueue.set(noteId, task);
+    
+    if (!this.processing) {
+      this.processQueue();
+    }
+  }
+
+  private async processQueue(): Promise<void> {
+    this.processing = true;
+    const activeSaves = new Set<Promise<void>>();
+
+    try {
+      while (this.saveQueue.size > 0 || activeSaves.size > 0) {
+        // Start new saves up to max concurrent limit
+        while (activeSaves.size < this.maxConcurrentSaves && this.saveQueue.size > 0) {
+          const [noteId, task] = Array.from(this.saveQueue.entries())[0];
+          this.saveQueue.delete(noteId);
+
+          const savePromise = this.performSave(task)
+            .catch(error => this.handleSaveError(task, error))
+            .finally(() => activeSaves.delete(savePromise));
+
+          activeSaves.add(savePromise);
+        }
+
+        // Wait for at least one save to complete
+        if (activeSaves.size > 0) {
+          await Promise.race(activeSaves);
+        }
+      }
+    } finally {
+      this.processing = false;
+    }
+  }
+
+  private async performSave(task: AutoSaveTask): Promise<void> {
+    try {
+      // Check disk space before save
+      await this.diskSpaceMonitor.ensureSufficientSpace();
+      
+      // Atomic write with temporary file
+      const tempFile = `${this.getNotePath(task.noteId)}.tmp`;
+      await fs.writeFile(tempFile, task.content);
+      await fs.rename(tempFile, this.getNotePath(task.noteId));
+      
+      // Update database
+      await this.db.run(
+        'UPDATE notes SET content = ?, updated_at = ? WHERE id = ?',
+        [task.content, new Date().toISOString(), task.noteId]
+      );
+
+      this.notifyAutoSaveSuccess(task.noteId);
+    } catch (error) {
+      throw new AutoSaveError(`Save failed for note ${task.noteId}: ${error.message}`);
+    }
+  }
+
+  private async handleSaveError(task: AutoSaveTask, error: Error): Promise<void> {
+    task.attempts++;
+    
+    if (task.attempts < task.maxAttempts) {
+      // Exponential backoff retry
+      const delay = Math.pow(2, task.attempts) * 1000;
+      setTimeout(() => {
+        this.saveQueue.set(task.noteId, task);
+      }, delay);
+    } else {
+      // Max attempts exceeded - save to emergency location
+      await this.saveToEmergencyLocation(task);
+      this.notifyAutoSaveFailure(task.noteId, error.message);
+    }
+  }
+}
+```
+
+### File Lock Conflict Resolution
+
+```typescript
+class FileLockManager {
+  private lockFiles = new Map<string, NodeJS.Timeout>();
+
+  async acquireFileLock(filePath: string, timeout = 5000): Promise<boolean> {
+    const lockPath = `${filePath}.lock`;
+    const lockId = Math.random().toString(36);
+
+    try {
+      // Try to create lock file exclusively
+      await fs.writeFile(lockPath, lockId, { flag: 'wx' });
+      
+      // Set lock timeout
+      const timeoutId = setTimeout(async () => {
+        await this.releaseLock(filePath, lockId);
+      }, timeout);
+      
+      this.lockFiles.set(filePath, timeoutId);
+      return true;
+    } catch (error) {
+      if (error.code === 'EEXIST') {
+        // Lock file exists - check if it's stale
+        return await this.handleExistingLock(filePath, lockPath);
+      }
+      throw error;
+    }
+  }
+
+  private async handleExistingLock(filePath: string, lockPath: string): Promise<boolean> {
+    try {
+      const lockStats = await fs.stat(lockPath);
+      const lockAge = Date.now() - lockStats.mtime.getTime();
+      
+      // If lock is older than 30 seconds, consider it stale
+      if (lockAge > 30000) {
+        await fs.unlink(lockPath);
+        return await this.acquireFileLock(filePath);
+      }
+      
+      return false; // Active lock, cannot acquire
+    } catch (error) {
+      // Lock file disappeared, try again
+      return await this.acquireFileLock(filePath);
+    }
+  }
+
+  async releaseLock(filePath: string, lockId: string): Promise<void> {
+    const lockPath = `${filePath}.lock`;
+    
+    try {
+      const currentLock = await fs.readFile(lockPath, 'utf8');
+      if (currentLock === lockId) {
+        await fs.unlink(lockPath);
+      }
+    } catch (error) {
+      // Lock file already removed or doesn't exist
+    }
+    
+    const timeoutId = this.lockFiles.get(filePath);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      this.lockFiles.delete(filePath);
+    }
+  }
+}
+```
+
+### Rollback Mechanism
+
+```typescript
+class SaveRollbackManager {
+  private rollbackStack = new Map<string, RollbackPoint[]>();
+
+  async createRollbackPoint(noteId: string): Promise<string> {
+    const rollbackId = `rb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    try {
+      // Get current state
+      const currentNote = await this.db.get(
+        'SELECT * FROM notes WHERE id = ?', 
+        [noteId]
+      );
+      
+      if (!currentNote) return rollbackId;
+
+      const rollbackPoint: RollbackPoint = {
+        id: rollbackId,
+        noteId,
+        content: currentNote.content,
+        updatedAt: currentNote.updated_at,
+        timestamp: new Date().toISOString()
+      };
+
+      // Store rollback point
+      const rollbacks = this.rollbackStack.get(noteId) || [];
+      rollbacks.push(rollbackPoint);
+      
+      // Keep only last 5 rollback points
+      if (rollbacks.length > 5) {
+        rollbacks.shift();
+      }
+      
+      this.rollbackStack.set(noteId, rollbacks);
+      
+      // Persist to disk for crash recovery
+      await this.persistRollbackPoint(rollbackPoint);
+      
+    } catch (error) {
+      console.error('Failed to create rollback point:', error);
+    }
+    
+    return rollbackId;
+  }
+
+  async rollback(noteId: string, rollbackId?: string): Promise<boolean> {
+    const rollbacks = this.rollbackStack.get(noteId);
+    if (!rollbacks || rollbacks.length === 0) return false;
+
+    try {
+      let rollbackPoint: RollbackPoint;
+      
+      if (rollbackId) {
+        rollbackPoint = rollbacks.find(rb => rb.id === rollbackId);
+        if (!rollbackPoint) return false;
+      } else {
+        // Use most recent rollback point
+        rollbackPoint = rollbacks[rollbacks.length - 1];
+      }
+
+      // Restore previous state
+      await this.db.run(
+        'UPDATE notes SET content = ?, updated_at = ? WHERE id = ?',
+        [rollbackPoint.content, rollbackPoint.updatedAt, noteId]
+      );
+
+      // Remove used rollback points
+      const index = rollbacks.indexOf(rollbackPoint);
+      rollbacks.splice(index);
+      
+      this.notifyRollbackSuccess(noteId, rollbackPoint.timestamp);
+      return true;
+      
+    } catch (error) {
+      console.error('Rollback failed:', error);
+      this.notifyRollbackFailure(noteId, error.message);
+      return false;
+    }
+  }
+}
+```
+
+This comprehensive analysis covers all critical failure modes with production-ready error handling, recovery mechanisms, and user experience considerations for an Electron StickyNotes application.!@#!@# false
+# ELECTRON ERROR EXPERT 2: NETWORK & SYNCHRONIZATION ERRORS
+
+## OFFLINE/ONLINE TRANSITION HANDLING
+
+### Network State Detection & Monitoring
+
+```javascript
+// Network state manager with comprehensive detection
+class NetworkStateManager {
+  constructor() {
+    this.isOnline = navigator.onLine;
+    this.connectionQuality = 'unknown';
+    this.lastOnlineTimestamp = Date.now();
+    this.listeners = new Set();
+  }
+
+  initialize() {
+    // Primary online/offline detection
+    window.addEventListener('online', this.handleOnline.bind(this));
+    window.addEventListener('offline', this.handleOffline.bind(this));
+    
+    // Advanced connection quality monitoring
+    this.startConnectionQualityMonitoring();
+    
+    // Periodic connectivity validation
+    this.startConnectivityValidation();
+  }
+
+  async startConnectionQualityMonitoring() {
+    if ('connection' in navigator) {
+      navigator.connection.addEventListener('change', () => {
+        this.connectionQuality = this.assessConnectionQuality();
+        this.notifyListeners('quality-change', this.connectionQuality);
+      });
+    }
+  }
+
+  assessConnectionQuality() {
+    const connection = navigator.connection;
+    if (!connection) return 'unknown';
+    
+    const effectiveType = connection.effectiveType;
+    const downlink = connection.downlink;
+    const rtt = connection.rtt;
+    
+    if (effectiveType === 'slow-2g' || downlink < 0.5 || rtt > 2000) {
+      return 'poor';
+    } else if (effectiveType === '2g' || downlink < 1.5 || rtt > 1000) {
+      return 'fair';
+    } else if (effectiveType === '3g' || downlink < 5 || rtt > 500) {
+      return 'good';
+    } else {
+      return 'excellent';
+    }
+  }
+
+  async startConnectivityValidation() {
+    setInterval(async () => {
+      if (this.isOnline) {
+        const actuallyOnline = await this.validateConnectivity();
+        if (!actuallyOnline && this.isOnline) {
+          this.handleOffline();
+        }
+      }
+    }, 30000); // Validate every 30 seconds
+  }
+
+  async validateConnectivity() {
+    try {
+      const response = await fetch('/api/health', {
+        method: 'HEAD',
+        cache: 'no-cache',
+        timeout: 5000
+      });
+      return response.ok;
+    } catch (error) {
+      return false;
+    }
+  }
+}
+```
+
+### Queue-Based Sync Operations
+
+```javascript
+// Sync queue manager for offline operations
+class SyncQueueManager {
+  constructor(storage) {
+    this.storage = storage;
+    this.queue = [];
+    this.processingQueue = false;
+    this.maxRetries = 5;
+    this.retryDelays = [1000, 2000, 5000, 10000, 30000]; // Exponential backoff
+  }
+
+  // Queue operations during offline periods
+  async queueOperation(operation) {
+    const queueItem = {
+      id: generateUUID(),
+      operation,
+      timestamp: Date.now(),
+      retryCount: 0,
+      status: 'pending'
+    };
+    
+    this.queue.push(queueItem);
+    await this.persistQueue();
+    
+    // Try to process immediately if online
+    if (navigator.onLine) {
+      this.processQueue();
+    }
+    
+    return queueItem.id;
+  }
+
+  async processQueue() {
+    if (this.processingQueue) return;
+    
+    this.processingQueue = true;
+    
+    try {
+      const pendingItems = this.queue.filter(item => 
+        item.status === 'pending' && item.retryCount < this.maxRetries
+      );
+      
+      for (const item of pendingItems) {
+        await this.processQueueItem(item);
+      }
+      
+      // Clean up completed and failed items
+      this.queue = this.queue.filter(item => 
+        item.status === 'pending' && item.retryCount < this.maxRetries
+      );
+      
+      await this.persistQueue();
+    } finally {
+      this.processingQueue = false;
+    }
+  }
+
+  async processQueueItem(item) {
+    try {
+      await this.executeOperation(item.operation);
+      item.status = 'completed';
+      this.notifySuccess(item);
+    } catch (error) {
+      item.retryCount++;
+      
+      if (this.isNetworkError(error)) {
+        // Schedule retry for network errors
+        setTimeout(() => {
+          if (navigator.onLine) {
+            this.processQueue();
+          }
+        }, this.retryDelays[Math.min(item.retryCount - 1, this.retryDelays.length - 1)]);
+      } else {
+        // Mark as failed for non-network errors
+        item.status = 'failed';
+        this.notifyError(item, error);
+      }
+    }
+  }
+
+  isNetworkError(error) {
+    const networkErrors = [
+      'ENETDOWN', 'ENETUNREACH', 'EHOSTUNREACH', 
+      'ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT'
+    ];
+    return networkErrors.some(code => error.code === code) ||
+           error.message?.includes('Network request failed') ||
+           error.message?.includes('fetch');
+  }
+}
+```
+
+### Network Error Codes & Handling
+
+```javascript
+// Comprehensive network error handling
+class NetworkErrorHandler {
+  static ERROR_CODES = {
+    // Connection errors
+    ENETDOWN: 'Network is down',
+    ENETUNREACH: 'Network is unreachable', 
+    EHOSTUNREACH: 'Host is unreachable',
+    ECONNREFUSED: 'Connection refused',
+    ECONNRESET: 'Connection reset by peer',
+    ETIMEDOUT: 'Connection timed out',
+    
+    // HTTP errors
+    HTTP_408: 'Request timeout',
+    HTTP_429: 'Too many requests',
+    HTTP_500: 'Internal server error',
+    HTTP_502: 'Bad gateway',
+    HTTP_503: 'Service unavailable',
+    HTTP_504: 'Gateway timeout'
+  };
+
+  static handleError(error) {
+    const errorCode = error.code || `HTTP_${error.status}`;
+    const errorMessage = this.ERROR_CODES[errorCode] || 'Unknown network error';
+    
+    return {
+      code: errorCode,
+      message: errorMessage,
+      isRetryable: this.isRetryableError(errorCode),
+      retryAfter: this.getRetryDelay(errorCode),
+      userMessage: this.getUserFriendlyMessage(errorCode)
+    };
+  }
+
+  static isRetryableError(code) {
+    const retryableErrors = [
+      'ETIMEDOUT', 'ECONNRESET', 'ENETUNREACH',
+      'HTTP_408', 'HTTP_429', 'HTTP_500', 'HTTP_502', 'HTTP_503', 'HTTP_504'
+    ];
+    return retryableErrors.includes(code);
+  }
+
+  static getRetryDelay(code) {
+    const delays = {
+      'HTTP_429': 60000, // 1 minute for rate limiting
+      'HTTP_503': 30000, // 30 seconds for service unavailable
+      'ETIMEDOUT': 10000, // 10 seconds for timeouts
+      'default': 5000
+    };
+    return delays[code] || delays.default;
+  }
+}
+```
+
+## CLOUD SYNC CONFLICTS & RESOLUTION
+
+### Three-Way Merge Algorithm
+
+```javascript
+// Advanced conflict resolution with three-way merge
+class ConflictResolver {
+  constructor() {
+    this.mergeStrategies = {
+      'last-writer-wins': this.lastWriterWins.bind(this),
+      'three-way-merge': this.threeWayMerge.bind(this),
+      'user-choice': this.promptUserChoice.bind(this),
+      'preserve-both': this.preserveBoth.bind(this)
+    };
+  }
+
+  async resolveConflict(conflict) {
+    const { localVersion, remoteVersion, baseVersion, strategy } = conflict;
+    
+    // Detect conflict type
+    const conflictType = this.detectConflictType(localVersion, remoteVersion, baseVersion);
+    
+    switch (conflictType) {
+      case 'no-conflict':
+        return this.autoMerge(localVersion, remoteVersion, baseVersion);
+      
+      case 'simple-conflict':
+        return await this.mergeStrategies[strategy](conflict);
+      
+      case 'complex-conflict':
+        return await this.handleComplexConflict(conflict);
+      
+      default:
+        throw new Error(`Unknown conflict type: ${conflictType}`);
+    }
+  }
+
+  detectConflictType(local, remote, base) {
+    // No changes
+    if (this.contentEqual(local, base) && this.contentEqual(remote, base)) {
+      return 'no-conflict';
+    }
+    
+    // Only local changes
+    if (this.contentEqual(remote, base) && !this.contentEqual(local, base)) {
+      return 'no-conflict';
+    }
+    
+    // Only remote changes
+    if (this.contentEqual(local, base) && !this.contentEqual(remote, base)) {
+      return 'no-conflict';
+    }
+    
+    // Both changed - check for conflicts
+    const localDiff = this.computeDiff(base, local);
+    const remoteDiff = this.computeDiff(base, remote);
+    
+    if (this.hasOverlappingChanges(localDiff, remoteDiff)) {
+      return 'complex-conflict';
+    }
+    
+    return 'simple-conflict';
+  }
+
+  async threeWayMerge(conflict) {
+    const { localVersion, remoteVersion, baseVersion } = conflict;
+    
+    try {
+      // Compute diffs from base to both versions
+      const localChanges = this.computeStructuredDiff(baseVersion, localVersion);
+      const remoteChanges = this.computeStructuredDiff(baseVersion, remoteVersion);
+      
+      // Apply non-conflicting changes
+      let mergedContent = { ...baseVersion };
+      
+      // Apply local changes
+      for (const change of localChanges) {
+        if (!this.conflictsWith(change, remoteChanges)) {
+          mergedContent = this.applyChange(mergedContent, change);
+        }
+      }
+      
+      // Apply remote changes
+      for (const change of remoteChanges) {
+        if (!this.conflictsWith(change, localChanges)) {
+          mergedContent = this.applyChange(mergedContent, change);
+        }
+      }
+      
+      // Handle remaining conflicts
+      const remainingConflicts = this.findRemainingConflicts(localChanges, remoteChanges);
+      
+      if (remainingConflicts.length > 0) {
+        return await this.handleRemainingConflicts(mergedContent, remainingConflicts);
+      }
+      
+      return {
+        success: true,
+        mergedVersion: mergedContent,
+        conflicts: []
+      };
+      
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        fallbackStrategy: 'user-choice'
+      };
+    }
+  }
+
+  computeStructuredDiff(base, current) {
+    const changes = [];
+    
+    // Content changes
+    if (base.content !== current.content) {
+      changes.push({
+        type: 'content',
+        path: 'content',
+        oldValue: base.content,
+        newValue: current.content,
+        operation: 'modify'
+      });
+    }
+    
+    // Metadata changes
+    Object.keys(current.metadata || {}).forEach(key => {
+      const baseValue = base.metadata?.[key];
+      const currentValue = current.metadata[key];
+      
+      if (baseValue !== currentValue) {
+        changes.push({
+          type: 'metadata',
+          path: `metadata.${key}`,
+          oldValue: baseValue,
+          newValue: currentValue,
+          operation: baseValue === undefined ? 'add' : 'modify'
+        });
+      }
+    });
+    
+    return changes;
+  }
+}
+```
+
+### Conflict Resolution UI
+
+```javascript
+// User-driven conflict resolution interface
+class ConflictResolutionUI {
+  constructor(parentElement) {
+    this.parentElement = parentElement;
+    this.activeConflicts = new Map();
+  }
+
+  async showConflictDialog(conflict) {
+    return new Promise((resolve) => {
+      const dialog = this.createConflictDialog(conflict, resolve);
+      this.parentElement.appendChild(dialog);
+      
+      // Focus management
+      dialog.querySelector('.conflict-option-local').focus();
+    });
+  }
+
+  createConflictDialog(conflict, resolve) {
+    const dialog = document.createElement('div');
+    dialog.className = 'conflict-dialog-overlay';
+    
+    dialog.innerHTML = `
+      <div class="conflict-dialog">
+        <div class="conflict-header">
+          <h3>Sync Conflict Detected</h3>
+          <p>The note "${conflict.noteTitle}" has been modified both locally and remotely.</p>
+        </div>
+        
+        <div class="conflict-versions">
+          <div class="version-panel local">
+            <h4>Your Version (Local)</h4>
+            <div class="version-timestamp">${this.formatTimestamp(conflict.localVersion.modifiedAt)}</div>
+            <div class="version-preview">${this.previewContent(conflict.localVersion.content)}</div>
+            <button class="conflict-option-local" data-choice="local">Use This Version</button>
+          </div>
+          
+          <div class="version-panel remote">
+            <h4>Server Version (Remote)</h4>
+            <div class="version-timestamp">${this.formatTimestamp(conflict.remoteVersion.modifiedAt)}</div>
+            <div class="version-preview">${this.previewContent(conflict.remoteVersion.content)}</div>
+            <button class="conflict-option-remote" data-choice="remote">Use This Version</button>
+          </div>
+        </div>
+        
+        <div class="conflict-actions">
+          <button class="conflict-option-merge" data-choice="merge">Smart Merge</button>
+          <button class="conflict-option-both" data-choice="both">Keep Both Versions</button>
+          <button class="conflict-option-manual" data-choice="manual">Manual Edit</button>
+        </div>
+      </div>
+    `;
+    
+    // Add event listeners
+    dialog.addEventListener('click', (e) => {
+      const choice = e.target.dataset.choice;
+      if (choice) {
+        this.handleConflictChoice(conflict, choice, resolve);
+        dialog.remove();
+      }
+    });
+    
+    return dialog;
+  }
+
+  async handleConflictChoice(conflict, choice, resolve) {
+    switch (choice) {
+      case 'local':
+        resolve({
+          resolution: 'use-local',
+          mergedVersion: conflict.localVersion
+        });
+        break;
+        
+      case 'remote':
+        resolve({
+          resolution: 'use-remote', 
+          mergedVersion: conflict.remoteVersion
+        });
+        break;
+        
+      case 'merge':
+        const mergeResult = await this.attemptAutoMerge(conflict);
+        resolve({
+          resolution: 'auto-merge',
+          mergedVersion: mergeResult
+        });
+        break;
+        
+      case 'both':
+        resolve({
+          resolution: 'keep-both',
+          localVersion: conflict.localVersion,
+          remoteVersion: conflict.remoteVersion
+        });
+        break;
+        
+      case 'manual':
+        const editedVersion = await this.showManualEditor(conflict);
+        resolve({
+          resolution: 'manual-edit',
+          mergedVersion: editedVersion
+        });
+        break;
+    }
+  }
+}
+```
+
+## NETWORK TIMEOUT & RECOVERY
+
+### Exponential Backoff & Circuit Breaker
+
+```javascript
+// Advanced retry and circuit breaker implementation
+class RetryManager {
+  constructor() {
+    this.circuits = new Map();
+    this.defaultConfig = {
+      maxRetries: 5,
+      baseDelay: 1000,
+      maxDelay: 30000,
+      backoffMultiplier: 2,
+      jitter: true,
+      
+      // Circuit breaker config
+      failureThreshold: 5,
+      recoveryTimeout: 60000,
+      monitoringPeriod: 120000
+    };
+  }
+
+  async executeWithRetry(operation, config = {}) {
+    const finalConfig = { ...this.defaultConfig, ...config };
+    const circuitKey = config.circuitKey || 'default';
+    
+    // Check circuit breaker
+    if (this.isCircuitOpen(circuitKey)) {
+      throw new Error('Circuit breaker is open - service unavailable');
+    }
+    
+    let lastError;
+    
+    for (let attempt = 0; attempt <= finalConfig.maxRetries; attempt++) {
+      try {
+        const result = await this.executeWithTimeout(operation, finalConfig);
+        
+        // Success - reset circuit breaker
+        this.recordSuccess(circuitKey);
+        return result;
+        
+      } catch (error) {
+        lastError = error;
+        this.recordFailure(circuitKey, error);
+        
+        // Don't retry on non-retryable errors
+        if (!this.isRetryableError(error)) {
+          throw error;
+        }
+        
+        // Don't wait after final attempt
+        if (attempt < finalConfig.maxRetries) {
+          const delay = this.calculateDelay(attempt, finalConfig);
+          await this.sleep(delay);
+        }
+      }
+    }
+    
+    throw lastError;
+  }
+
+  calculateDelay(attempt, config) {
+    let delay = config.baseDelay * Math.pow(config.backoffMultiplier, attempt);
+    delay = Math.min(delay, config.maxDelay);
+    
+    // Add jitter to prevent thundering herd
+    if (config.jitter) {
+      delay = delay * (0.5 + Math.random() * 0.5);
+    }
+    
+    return delay;
+  }
+
+  async executeWithTimeout(operation, config) {
+    const timeouts = {
+      connection: config.connectionTimeout || 10000,
+      read: config.readTimeout || 30000,
+      total: config.totalTimeout || 60000
+    };
+    
+    return new Promise((resolve, reject) => {
+      const totalTimer = setTimeout(() => {
+        reject(new Error(`Operation timed out after ${timeouts.total}ms`));
+      }, timeouts.total);
+      
+      operation(timeouts)
+        .then(result => {
+          clearTimeout(totalTimer);
+          resolve(result);
+        })
+        .catch(error => {
+          clearTimeout(totalTimer);
+          reject(error);
+        });
+    });
+  }
+
+  // Circuit breaker implementation
+  isCircuitOpen(circuitKey) {
+    const circuit = this.circuits.get(circuitKey);
+    if (!circuit) return false;
+    
+    return circuit.state === 'open' && 
+           Date.now() < circuit.nextAttempt;
+  }
+
+  recordFailure(circuitKey, error) {
+    let circuit = this.circuits.get(circuitKey) || this.createCircuit(circuitKey);
+    
+    circuit.failures++;
+    circuit.lastFailure = Date.now();
+    
+    // Check if we should open the circuit
+    if (circuit.failures >= this.defaultConfig.failureThreshold) {
+      circuit.state = 'open';
+      circuit.nextAttempt = Date.now() + this.defaultConfig.recoveryTimeout;
+      
+      this.notifyCircuitOpen(circuitKey);
+    }
+    
+    this.circuits.set(circuitKey, circuit);
+  }
+
+  recordSuccess(circuitKey) {
+    let circuit = this.circuits.get(circuitKey);
+    if (circuit) {
+      circuit.failures = 0;
+      circuit.state = 'closed';
+      circuit.lastSuccess = Date.now();
+      
+      this.circuits.set(circuitKey, circuit);
+    }
+  }
+}
+```
+
+### Partial Sync Recovery
+
+```javascript
+// Intelligent partial sync recovery
+class PartialSyncRecovery {
+  constructor(syncManager, storage) {
+    this.syncManager = syncManager;
+    this.storage = storage;
+    this.recoveryCheckpoints = new Map();
+  }
+
+  async initiateRecovery() {
+    try {
+      // Get last successful sync timestamp
+      const lastSyncTimestamp = await this.storage.getLastSyncTimestamp();
+      
+      // Identify items that failed to sync
+      const failedItems = await this.identifyFailedSyncItems(lastSyncTimestamp);
+      
+      // Batch items by priority
+      const batches = this.createRecoveryBatches(failedItems);
+      
+      // Process batches with checkpoints
+      for (const batch of batches) {
+        await this.processBatch(batch);
+        await this.createCheckpoint(batch);
+      }
+      
+      return {
+        success: true,
+        recoveredItems: failedItems.length,
+        timestamp: Date.now()
+      };
+      
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        partialRecovery: await this.getRecoveryStatus()
+      };
+    }
+  }
+
+  async identifyFailedSyncItems(lastSyncTimestamp) {
+    const localItems = await this.storage.getModifiedSince(lastSyncTimestamp);
+    const failedItems = [];
+    
+    for (const item of localItems) {
+      const syncStatus = await this.storage.getSyncStatus(item.id);
+      
+      if (syncStatus.status === 'failed' || 
+          syncStatus.status === 'pending' ||
+          syncStatus.lastAttempt < item.modifiedAt) {
+        failedItems.push({
+          ...item,
+          syncStatus,
+          priority: this.calculatePriority(item)
+        });
+      }
+    }
+    
+    return failedItems.sort((a, b) => b.priority - a.priority);
+  }
+
+  createRecoveryBatches(items) {
+    const batches = [];
+    const batchSize = 10; // Configurable
+    
+    // Group high priority items in smaller batches
+    const highPriority = items.filter(item => item.priority > 8);
+    const normalPriority = items.filter(item => item.priority <= 8);
+    
+    // Process high priority items first in smaller batches
+    for (let i = 0; i < highPriority.length; i += Math.ceil(batchSize / 2)) {
+      batches.push({
+        items: highPriority.slice(i, i + Math.ceil(batchSize / 2)),
+        priority: 'high',
+        timeout: 15000
+      });
+    }
+    
+    // Process normal priority in regular batches
+    for (let i = 0; i < normalPriority.length; i += batchSize) {
+      batches.push({
+        items: normalPriority.slice(i, i + batchSize),
+        priority: 'normal', 
+        timeout: 30000
+      });
+    }
+    
+    return batches;
+  }
+
+  async processBatch(batch) {
+    const promises = batch.items.map(item => 
+      this.syncManager.syncItem(item).catch(error => ({
+        item,
+        error,
+        success: false
+      }))
+    );
+    
+    const results = await Promise.allSettled(promises);
+    
+    // Update sync status for each item
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      const item = batch.items[i];
+      
+      if (result.status === 'fulfilled' && !result.value.error) {
+        await this.storage.updateSyncStatus(item.id, 'synced');
+      } else {
+        await this.storage.updateSyncStatus(item.id, 'failed', {
+          error: result.reason || result.value?.error,
+          lastAttempt: Date.now()
+        });
+      }
+    }
+  }
+}
+```
+
+## AUTHENTICATION TOKEN MANAGEMENT
+
+### JWT Token Refresh & Rotation
+
+```javascript
+// Comprehensive token management system
+class TokenManager {
+  constructor(storage, authService) {
+    this.storage = storage;
+    this.authService = authService;
+    this.refreshPromise = null;
+    this.refreshThreshold = 300000; // 5 minutes before expiry
+  }
+
+  async getValidToken() {
+    const token = await this.storage.getAccessToken();
+    
+    if (!token) {
+      throw new AuthError('No access token available', 'NO_TOKEN');
+    }
+    
+    // Check if token needs refresh
+    if (this.shouldRefreshToken(token)) {
+      return await this.refreshToken();
+    }
+    
+    return token;
+  }
+
+  shouldRefreshToken(token) {
+    try {
+      const payload = this.decodeTokenPayload(token);
+      const expiresAt = payload.exp * 1000; // Convert to milliseconds
+      const now = Date.now();
+      
+      return (expiresAt - now) < this.refreshThreshold;
+    } catch (error) {
+      // Invalid token format
+      return true;
+    }
+  }
+
+  async refreshToken() {
+    // Prevent multiple concurrent refresh attempts
+    if (this.refreshPromise) {
+      return await this.refreshPromise;
+    }
+    
+    this.refreshPromise = this.executeTokenRefresh();
+    
+    try {
+      const newToken = await this.refreshPromise;
+      return newToken;
+    } finally {
+      this.refreshPromise = null;
+    }
+  }
+
+  async executeTokenRefresh() {
+    try {
+      const refreshToken = await this.storage.getRefreshToken();
+      
+      if (!refreshToken) {
+        throw new AuthError('No refresh token available', 'NO_REFRESH_TOKEN');
+      }
+      
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ refreshToken })
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          // Refresh token is invalid - need full re-authentication
+          await this.clearTokens();
+          throw new AuthError('Refresh token expired', 'REFRESH_EXPIRED');
+        }
+        throw new Error(`Token refresh failed: ${response.status}`);
+      }
+      
+      const tokenData = await response.json();
+      
+      // Store new tokens
+      await this.storage.setAccessToken(tokenData.accessToken);
+      if (tokenData.refreshToken) {
+        await this.storage.setRefreshToken(tokenData.refreshToken);
+      }
+      
+      return tokenData.accessToken;
+      
+    } catch (error) {
+      // Clear tokens on refresh failure
+      await this.clearTokens();
+      throw error;
+    }
+  }
+
+  async validateTokenBeforeSync(operation) {
+    try {
+      const token = await this.getValidToken();
+      
+      // Add authorization header to operation
+      if (!operation.headers) {
+        operation.headers = {};
+      }
+      operation.headers.Authorization = `Bearer ${token}`;
+      
+      return operation;
+      
+    } catch (error) {
+      if (error.code === 'REFRESH_EXPIRED') {
+        // Trigger re-authentication flow
+        await this.triggerReAuthentication();
+      }
+      throw error;
+    }
+  }
+
+  async triggerReAuthentication() {
+    // Notify UI to show login prompt
+    this.notifyAuthRequired();
+    
+    // Pause all sync operations
+    this.pauseSync();
+    
+    // Wait for user to complete authentication
+    return new Promise((resolve, reject) => {
+      this.authService.onAuthComplete = (success, tokens) => {
+        if (success) {
+          this.resumeSync();
+          resolve(tokens);
+        } else {
+          reject(new AuthError('Authentication failed', 'AUTH_FAILED'));
+        }
+      };
+    });
+  }
+}
+```
+
+## BANDWIDTH LIMITATION ADAPTATIONS
+
+### Adaptive Sync Algorithms
+
+```javascript
+// Bandwidth-aware sync optimization
+class AdaptiveSyncManager {
+  constructor() {
+    this.connectionQuality = 'good';
+    this.syncStrategies = {
+      'poor': {
+        maxConcurrentSyncs: 1,
+        batchSize: 5,
+        compressionLevel: 9,
+        priorityOnly: true,
+        syncInterval: 300000 // 5 minutes
+      },
+      'fair': {
+        maxConcurrentSyncs: 2,
+        batchSize: 10,
+        compressionLevel: 6,
+        priorityOnly: false,
+        syncInterval: 120000 // 2 minutes
+      },
+      'good': {
+        maxConcurrentSyncs: 3,
+        batchSize: 20,
+        compressionLevel: 3,
+        priorityOnly: false,
+        syncInterval: 60000 // 1 minute
+      },
+      'excellent': {
+        maxConcurrentSyncs: 5,
+        batchSize: 50,
+        compressionLevel: 1,
+        priorityOnly: false,
+        syncInterval: 30000 // 30 seconds
+      }
+    };
+  }
+
+  async executeSyncWithAdaptation(items) {
+    const strategy = this.syncStrategies[this.connectionQuality];
+    
+    // Filter items by priority if needed
+    let syncItems = strategy.priorityOnly 
+      ? items.filter(item => item.priority > 7)
+      : items;
+    
+    // Apply compression
+    syncItems = await this.compressPayloads(syncItems, strategy.compressionLevel);
+    
+    // Create batches
+    const batches = this.createAdaptiveBatches(syncItems, strategy.batchSize);
+    
+    // Execute with concurrency limit
+    const results = await this.executeConcurrentBatches(batches, strategy.maxConcurrentSyncs);
+    
+    return results;
+  }
+
+  async compressPayloads(items, compressionLevel) {
+    if (compressionLevel === 1) return items; // No compression
+    
+    return items.map(item => ({
+      ...item,
+      content: this.compressContent(item.content, compressionLevel),
+      compressed: true
+    }));
+  }
+
+  compressContent(content, level) {
+    // Simple compression simulation - in reality use gzip/brotli
+    if (level >= 6) {
+      // High compression - remove extra whitespace, minify
+      return content
+        .replace(/\s+/g, ' ')
+        .replace(/\n\s*/g, '\n')
+        .trim();
+    } else if (level >= 3) {
+      // Medium compression - remove extra line breaks
+      return content.replace(/\n\s*\n/g, '\n');
+    }
+    
+    return content; // Low/no compression
+  }
+
+  // Delta sync for large content
+  async generateDeltaSync(oldContent, newContent) {
+    const delta = this.computeTextDelta(oldContent, newContent);
+    
+    // Only use delta if it's significantly smaller
+    if (delta.length < newContent.length * 0.7) {
+      return {
+        type: 'delta',
+        delta: delta,
+        size: delta.length
+      };
+    } else {
+      return {
+        type: 'full',
+        content: newContent,
+        size: newContent.length
+      };
+    }
+  }
+
+  // User controls for sync preferences
+  setupUserControls() {
+    return {
+      syncFrequency: {
+        realtime: 15000,
+        frequent: 60000,
+        moderate: 300000,
+        conservative: 900000
+      },
+      
+      dataUsage: {
+        unlimited: { maxBatchSize: 100, compression: 1 },
+        high: { maxBatchSize: 50, compression: 3 },
+        moderate: { maxBatchSize: 20, compression: 6 },
+        low: { maxBatchSize: 5, compression: 9 }
+      },
+      
+      backgroundSync: {
+        enabled: true,
+        wifiOnly: false,
+        priority: 'normal' // high, normal, low
+      }
+    };
+  }
+
+  async adaptToNetworkChange(newQuality) {
+    this.connectionQuality = newQuality;
+    
+    // Cancel ongoing operations if network degraded significantly
+    if (newQuality === 'poor' && this.ongoingSyncs.length > 1) {
+      await this.cancelLowPrioritySyncs();
+    }
+    
+    // Update sync interval
+    this.updateSyncInterval();
+    
+    // Notify user of adaptation
+    this.notifyNetworkAdaptation(newQuality);
+  }
+}
+```
+
+This comprehensive network and synchronization error handling system provides:
+
+1. **Robust offline/online detection** with quality monitoring
+2. **Queue-based operations** with intelligent retry mechanisms  
+3. **Advanced conflict resolution** using three-way merge algorithms
+4. **Circuit breaker patterns** to prevent cascade failures
+5. **Token management** with automatic refresh and rotation
+6. **Adaptive sync** based on network conditions and user preferences
+
+The system handles all major network scenarios while providing excellent user experience through intelligent error recovery and bandwidth optimization.!@#!@# false
+I've created a comprehensive analysis of user data corruption and recovery scenarios for Electron applications. This covers:
+
+## 🔍 **Corrupted Note Content Recovery**
+- **Detection algorithms** for JSON, HTML, and text corruption
+- **Checksum verification** and schema validation
+- **Recovery strategies** including partial recovery, version history restoration, and text extraction
+- **Content integrity validation** with automated repair workflows
+
+## 📥 **Import/Export Failure Handling**
+- **File format validation** with size and type checking
+- **Large file streaming** with progress tracking and memory management
+- **Format conversion** with fallback strategies
+- **Cancellation support** and partial operation recovery
+
+## 💾 **Backup Restoration Failures**
+- **Integrity verification** with checksum and structure validation
+- **Version compatibility** checking and automatic migration
+- **Rollback mechanisms** for failed restorations
+- **Partial restore** capabilities for corrupted backups
+
+## 📎 **Large File Attachment Errors**
+- **Storage quota management** with cleanup suggestions
+- **Chunk-based uploads** for very large files
+- **Compression optimization** with automatic suggestions
+- **Integrity verification** after upload completion
+
+## 🔤 **Character Encoding Issues**
+- **Unicode normalization** and cross-platform compatibility
+- **Encoding detection** and automatic conversion
+- **XSS prevention** with character sanitization
+- **Invalid character handling** with user-friendly replacements
+
+Each section includes:
+- ✅ **Detection algorithms** that identify issues early
+- 🔧 **Recovery workflows** that maximize data preservation  
+- 📊 **Progress tracking** for long-running operations
+- 🎯 **User experience patterns** that guide users through recovery
+- ⚡ **Performance optimization** for handling large datasets
+
+The framework prioritizes **data preservation** over perfection, offering multiple recovery strategies and graceful degradation to ensure users never lose their work completely.!@#!@# false
+!@#!@# false

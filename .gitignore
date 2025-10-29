@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+venv/
+.env
+*.pyc
+__pycache__/
+
+# Build outputs
+dist/
+build/
+out/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Testing
+coverage/
+.coverage
+.pytest_cache/
+
+# OS
+Thumbs.db
+
+# Archives
+backup/
+archive/
+*.zip
+*.tar.gz

@@ -1,0 +1,4 @@
+!@#!@# false
+I need to know which project contains the StickyNotes Electron app. Could you tell me which of the available projects (AgentCHAT, OC, StreamGRID) contains the StickyNotes app, or provide the correct project name?
+
+Alternatively, if it's in a different location, please let me know the path to the StickyNotes project directory.

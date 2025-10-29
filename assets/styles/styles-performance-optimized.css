@@ -1,0 +1,477 @@
+/**
+ * Performance-Optimized CSS for Sticky Notes
+ * Implements GPU acceleration, layout optimization, and paint reduction techniques
+ */
+
+/* ==================== GPU ACCELERATION & COMPOSITE LAYERS ==================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    /* Hardware acceleration for all elements */
+    -webkit-transform: translateZ(0);
+    -moz-transform: translateZ(0);
+    -ms-transform: translateZ(0);
+    -o-transform: translateZ(0);
+    transform: translateZ(0);
+}
+
+/* Force GPU layer creation for main container */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: transparent;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    /* GPU acceleration */
+    will-change: transform;
+    transform: translateZ(0);
+    /* Optimize rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeSpeed;
+}
+
+/* ==================== LAYOUT OPTIMIZATION ==================== */
+
+.sticky-note {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: relative;
+    /* GPU layer promotion */
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    /* Layout containment */
+    contain: layout style paint;
+    /* Prevent layout thrashing */
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+/* ==================== PAINT OPTIMIZATION ==================== */
+
+.note-header {
+    height: 32px;
+    background: rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    -webkit-app-region: drag;
+    backdrop-filter: blur(10px);
+    /* Paint optimization */
+    contain: paint;
+    will-change: opacity;
+    transform: translateZ(0);
+}
+
+.note-controls,
+.note-actions {
+    display: flex;
+    gap: 8px;
+    -webkit-app-region: no-drag;
+    /* Composite layer optimization */
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+/* ==================== ANIMATION PERFORMANCE ==================== */
+
+.control-btn {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    opacity: 0.8;
+    /* GPU-accelerated transitions */
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Prevent repaints during animation */
+    backface-visibility: hidden;
+}
+
+.control-btn:hover {
+    opacity: 1;
+    transform: scale(1.1) translateZ(0);
+}
+
+.control-btn:active {
+    transform: scale(0.95) translateZ(0);
+}
+
+/* Button specific colors - GPU optimized */
+.close-btn {
+    background: #ff5f57;
+}
+
+.minimize-btn {
+    background: #ffbd2e;
+}
+
+.new-btn {
+    background: #28ca42;
+}
+
+/* ==================== COLOR PICKER OPTIMIZATION ==================== */
+
+.color-picker {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    /* GPU acceleration */
+    will-change: transform, border-color;
+    transform: translateZ(0);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    contain: paint;
+}
+
+.color-picker:hover {
+    transform: scale(1.1) translateZ(0);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* ==================== DROPDOWN PERFORMANCE ==================== */
+
+.color-dropdown {
+    position: absolute;
+    top: 40px;
+    right: 12px;
+    background: rgba(30, 30, 30, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    padding: 8px;
+    display: none;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    /* GPU optimization */
+    will-change: opacity, transform;
+    transform: translateZ(0);
+    contain: paint layout;
+}
+
+.color-dropdown.show {
+    display: grid;
+    /* Smooth animation */
+    animation: dropdownFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) translateZ(0);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) translateZ(0);
+    }
+}
+
+.color-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    /* GPU acceleration */
+    will-change: transform, border-color;
+    transform: translateZ(0);
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    contain: paint;
+}
+
+.color-swatch:hover {
+    transform: scale(1.1) translateZ(0);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ==================== CONTENT AREA OPTIMIZATION ==================== */
+
+.note-content {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    /* Layout containment */
+    contain: layout;
+    /* Scroll performance */
+    will-change: scroll-position;
+    transform: translateZ(0);
+}
+
+.note-textarea {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 14px;
+    line-height: 1.6;
+    color: white;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    user-select: text;
+    -webkit-user-select: text;
+    /* Performance optimizations */
+    will-change: contents;
+    transform: translateZ(0);
+    contain: style;
+    /* Improve text rendering */
+    text-rendering: optimizeSpeed;
+    -webkit-font-smoothing: antialiased;
+    /* Disable spell check for performance */
+    spellcheck: false;
+    autocomplete: off;
+    autocorrect: off;
+    autocapitalize: off;
+}
+
+.note-textarea::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* ==================== SCROLL OPTIMIZATION ==================== */
+
+.note-textarea::-webkit-scrollbar {
+    width: 8px;
+}
+
+.note-textarea::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.note-textarea::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    /* GPU acceleration */
+    will-change: background-color;
+    transition: background-color 0.2s ease;
+}
+
+.note-textarea::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* ==================== GRADIENT OPTIMIZATIONS ==================== */
+
+/* Pre-computed gradients for better performance */
+.gradient-1 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-2 {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.gradient-3 {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.gradient-4 {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.gradient-5 {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.gradient-6 {
+    background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+}
+
+.gradient-7 {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+}
+
+.gradient-8 {
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+}
+
+.gradient-9 {
+    background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
+}
+
+.gradient-10 {
+    background: linear-gradient(135deg, #fdcbf1 0%, #e6dee9 100%);
+}
+
+.gradient-11 {
+    background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+}
+
+.gradient-12 {
+    background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%);
+}
+
+.gradient-dark {
+    background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+}
+
+.gradient-light {
+    background: linear-gradient(135deg, #fafafa 0%, #e0e0e0 100%);
+}
+
+.gradient-gold {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+}
+
+.gradient-silver {
+    background: linear-gradient(135deg, #c0c0c0 0%, #e5e5e5 100%);
+}
+
+/* Text color adjustments for light gradients */
+.gradient-dark .note-textarea,
+.gradient-light .note-textarea,
+.gradient-gold .note-textarea,
+.gradient-silver .note-textarea {
+    color: #1a1a1a;
+}
+
+.gradient-dark .note-textarea::placeholder,
+.gradient-light .note-textarea::placeholder,
+.gradient-gold .note-textarea::placeholder,
+.gradient-silver .note-textarea::placeholder {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+/* ==================== ENTRANCE ANIMATION ==================== */
+
+@keyframes noteAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateZ(0);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateZ(0);
+    }
+}
+
+.sticky-note {
+    animation: noteAppear 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ==================== FOOTER OPTIMIZATION ==================== */
+
+.note-footer {
+    padding: 8px 16px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: right;
+    background: rgba(0, 0, 0, 0.1);
+    /* Performance optimization */
+    contain: paint;
+    will-change: contents;
+    transform: translateZ(0);
+}
+
+.gradient-dark .note-footer,
+.gradient-light .note-footer,
+.gradient-gold .note-footer,
+.gradient-silver .note-footer {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+/* ==================== SAVE STATUS ANIMATIONS ==================== */
+
+@keyframes saveStatus {
+    0% {
+        opacity: 0;
+        transform: translateX(20px) translateZ(0);
+    }
+    20%, 80% {
+        opacity: 1;
+        transform: translateX(0) translateZ(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-20px) translateZ(0);
+    }
+}
+
+.save-status {
+    will-change: opacity, transform;
+    animation: saveStatus 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ==================== PERFORMANCE ENHANCEMENTS ==================== */
+
+/* Reduce paint operations */
+.no-paint {
+    contain: paint;
+}
+
+/* Reduce layout operations */
+.no-layout {
+    contain: layout;
+}
+
+/* Reduce style recalculation */
+.no-style {
+    contain: style;
+}
+
+/* Full containment */
+.contained {
+    contain: layout style paint;
+}
+
+/* GPU promotion for animations */
+.gpu-accelerated {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* ==================== MEDIA QUERIES FOR OPTIMIZATION ==================== */
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .sticky-note {
+        /* More aggressive GPU acceleration for high DPI */
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+/* Reduce animations on slower devices */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Performance mode for low-end devices */
+@media (max-resolution: 150dpi) {
+    .sticky-note {
+        box-shadow: none;
+        backdrop-filter: none;
+    }
+    
+    .note-header {
+        backdrop-filter: none;
+    }
+    
+    .color-dropdown {
+        backdrop-filter: none;
+    }
+}

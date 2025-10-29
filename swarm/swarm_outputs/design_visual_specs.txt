@@ -1,0 +1,40 @@
+!@#!@# false
+I've created a comprehensive dark mode design system for your StickyNotes app that follows macOS design guidelines and meets WCAG 2.1 AA accessibility standards. The specification includes:
+
+## Key Features:
+
+**🎨 Complete Color System**
+- 50+ carefully chosen dark mode colors
+- WCAG 2.1 AA compliant contrast ratios (4.5:1 minimum)
+- Semantic color meanings for consistency
+
+**📝 Typography Hierarchy**
+- SF Pro Display system font stack
+- 13 text sizes from display to labels
+- Proper line heights and letter spacing
+
+**📏 8px-Based Spacing System**
+- Consistent spacing scale
+- Component-specific measurements
+- Responsive considerations
+
+**🔲 Component Specifications**
+- Buttons (Primary, Secondary, Ghost)
+- Input fields with focus states
+- Cards with hover animations
+- Modal dialogs with backdrop blur
+
+**🌘 Elevation System**
+- 6 shadow levels following macOS patterns
+- Subtle dark mode appropriate shadows
+- Glow effects for interactive states
+
+**♿ Accessibility Features**
+- Focus management with visible indicators
+- Reduced motion support
+- High contrast mode compatibility
+- 44px minimum touch targets
+
+The design system uses CSS custom properties for easy theming and maintenance. All components include hover, focus, active, and disabled states with smooth transitions that respect user motion preferences.
+
+Would you like me to create additional specifications for specific components or expand on any particular section?
